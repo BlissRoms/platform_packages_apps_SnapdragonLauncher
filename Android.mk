@@ -26,9 +26,12 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := $(call all-java-files-under, src) \
     $(call all-java-files-under, WallpaperPicker/src) \
     $(call all-proto-files-under, protos)
-LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/WallpaperPicker/res $(LOCAL_PATH)/res
+LOCAL_RESOURCE_DIR := $(LOCAL_PATH)/WallpaperPicker/res $(LOCAL_PATH)/res \
+                      $(TOP)/frameworks/support/v7/recyclerview/res
 LOCAL_PROGUARD_FLAG_FILES := proguard.flags
-LOCAL_STATIC_JAVA_LIBRARIES := android-support-v4 android-support-v7-recyclerview
+LOCAL_STATIC_JAVA_LIBRARIES := android-support-v4 \
+                               android-support-v7-recyclerview \
+                               android-support-v7-recyclerview-res
 
 LOCAL_PROTOC_OPTIMIZE_TYPE := nano
 LOCAL_PROTOC_FLAGS := --proto_path=$(LOCAL_PATH)/protos/
