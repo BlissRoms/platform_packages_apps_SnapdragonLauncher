@@ -39,8 +39,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Paint.Style;
 import android.graphics.PaintFlagsDrawFilter;
 import android.graphics.Rect;
+import android.graphics.RectF;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.PaintDrawable;
@@ -126,6 +129,48 @@ public final class Utilities {
 
     public static boolean isRotationAllowedForDevice(Context context) {
         return sForceEnableRotation || context.getResources().getBoolean(R.bool.allow_rotation);
+    }
+
+   static Bitmap createIconBitmap(Drawable icon, Context context, int count) {
+       Bitmap b = createIconBitmap(icon, context);
+
+       if (!isUnreadCountEnabled(context) || count <= 0) {
+           return b;
+       }
+
+       int textureWidth = b.getWidth();
+       final Resources resources = context.getResources();
+       final Canvas canvas = sCanvas;
+       canvas.setBitmap(b);
+
+       float textsize = resources.getDimension(R.dimen.infomation_count_textsize);
+       Paint countPaint = new Paint(Paint.ANTI_ALIAS_FLAG|Paint.DEV_KERN_TEXT_FLAG);
+       countPaint.setColor(Color.WHITE);
+       countPaint.setTextSize(textsize);
+
+       String text = String.valueOf(count);
+       if (count >= 1000) {
+           text = "999+";
+       }
+
+       float count_hight = resources.getDimension(R.dimen.infomation_count_height);
+       float padding = resources.getDimension(R.dimen.infomation_count_padding);
+       float radius = resources.getDimension(R.dimen.infomation_count_circle_radius);
+       int  textwidth = (int) (countPaint.measureText(text) + 1);
+       float width =textwidth + padding * 2;
+       width = Math.max(width, resources.getDimensionPixelSize(R.dimen.infomation_count_min_width));
+
+       RectF rect = new RectF(textureWidth - width -1, 1, textureWidth - 1, count_hight + 1);
+       Paint paint = new Paint();
+       paint.setAntiAlias(true);
+       paint.setColor(resources.getColor(R.color.infomation_count_circle_color));
+       canvas.drawRoundRect(rect , radius, radius, paint);
+
+       float x = textureWidth - (width + textwidth ) / 2 - 1;
+       float y = textsize;
+       canvas.drawText(text, x, y, countPaint);
+
+       return b;
     }
 
     public static Bitmap createIconBitmap(Cursor c, int iconIndex, Context context) {
@@ -709,5 +754,11 @@ public final class Utilities {
 
     public static String createDbSelectionQuery(String columnName, Iterable<?> values) {
         return String.format(Locale.ENGLISH, "%s IN (%s)", columnName, TextUtils.join(", ", values));
+    }
+
+    public static boolean isUnreadCountEnabled(Context context) {
+        boolean result  = context.getResources().getBoolean(
+                R.bool.config_launcher_show_unread_number);
+        return result;
     }
 }
