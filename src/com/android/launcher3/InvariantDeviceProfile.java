@@ -45,6 +45,7 @@ public class InvariantDeviceProfile {
     // used to offset float not being able to express extremely small weights in extreme cases.
     private static float WEIGHT_EFFICIENT = 100000f;
 
+    private Context mContext;
     // Profile-defining invariant properties
     String name;
     float minWidthDps;
@@ -118,6 +119,7 @@ public class InvariantDeviceProfile {
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     InvariantDeviceProfile(Context context) {
+        mContext = context;
         WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
         DisplayMetrics dm = new DisplayMetrics();
@@ -173,20 +175,27 @@ public class InvariantDeviceProfile {
         ArrayList<InvariantDeviceProfile> predefinedDeviceProfiles = new ArrayList<>();
         // width, height, #rows, #columns, #folder rows, #folder columns,
         // iconSize, iconTextSize, #hotseat, #hotseatIconSize, defaultLayoutId.
+        int fourByFourDefaultLayout = R.xml.default_workspace_4x4;
+        if (mContext.getResources().getBoolean(
+                R.bool.config_launcher_customWorkspace)){
+            fourByFourDefaultLayout = R.xml.custom_workspace_4x4;
+
+        }
+
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Super Short Stubby",
-                255, 300,     2, 3, 2, 3, 3, 48, 13, 3, 48, R.xml.default_workspace_4x4));
+                255, 300,     2, 3, 2, 3, 3, 48, 13, 3, 48, fourByFourDefaultLayout));
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Shorter Stubby",
-                255, 400,     3, 3, 3, 3, 3, 48, 13, 3, 48, R.xml.default_workspace_4x4));
+                255, 400,     3, 3, 3, 3, 3, 48, 13, 3, 48, fourByFourDefaultLayout));
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Short Stubby",
-                275, 420,     3, 4, 3, 4, 4, 48, 13, 5, 48, R.xml.default_workspace_4x4));
+                275, 420,     3, 4, 3, 4, 4, 48, 13, 5, 48, fourByFourDefaultLayout));
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Stubby",
-                255, 450,     3, 4, 3, 4, 4, 48, 13, 5, 48, R.xml.default_workspace_4x4));
+                255, 450,     3, 4, 3, 4, 4, 48, 13, 5, 48, fourByFourDefaultLayout));
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Nexus S",
-                296, 491.33f, 4, 4, 4, 4, 4, 48, 13, 5, 48, R.xml.default_workspace_4x4));
+                296, 491.33f, 4, 4, 4, 4, 4, 48, 13, 5, 48, fourByFourDefaultLayout));
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Nexus 4",
-                335, 567,     4, 4, 4, 4, 4, DEFAULT_ICON_SIZE_DP, 13, 5, 56, R.xml.default_workspace_4x4));
+                335, 567,     4, 4, 4, 4, 4, DEFAULT_ICON_SIZE_DP, 13, 5, 56, fourByFourDefaultLayout));
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Nexus 5",
-                359, 567,     4, 4, 4, 4, 4, DEFAULT_ICON_SIZE_DP, 13, 5, 56, R.xml.default_workspace_4x4));
+                359, 567,     4, 4, 4, 4, 4, DEFAULT_ICON_SIZE_DP, 13, 5, 56, fourByFourDefaultLayout));
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Large Phone",
                 406, 694,     5, 5, 4, 4, 4, 64, 14.4f,  5, 56, R.xml.default_workspace_5x5));
         // The tablet profile is odd in that the landscape orientation
@@ -197,7 +206,8 @@ public class InvariantDeviceProfile {
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("Nexus 10",
                 727, 1207,    5, 6, 4, 5, 4, 76, 14.4f,  7, 64, R.xml.default_workspace_5x6));
         predefinedDeviceProfiles.add(new InvariantDeviceProfile("20-inch Tablet",
-                1527, 2527,   7, 7, 6, 6, 4, 100, 20,  7, 72, R.xml.default_workspace_4x4));
+                1527, 2527,   7, 7, 6, 6, 4, 100, 20,  7, 72, fourByFourDefaultLayout));
+
         return predefinedDeviceProfiles;
     }
 
