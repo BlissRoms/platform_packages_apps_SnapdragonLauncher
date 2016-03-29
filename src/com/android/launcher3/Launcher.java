@@ -2869,6 +2869,14 @@ public class Launcher extends Activity
     }
 
     private boolean startActivity(View v, Intent intent, Object tag) {
+        if (intent == null) {
+            Toast.makeText(this, R.string.activity_not_found, Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Launcher does not have the permission to launch null intent. " +
+                    "Make sure to create a MAIN intent-filter for the corresponding activity " +
+                    "or use the exported attribute for this activity. "
+                    + "tag="+ tag + " intent=null");
+            return false;
+        }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
             // Only launch using the new animation if the shortcut has not opted out (this is a
