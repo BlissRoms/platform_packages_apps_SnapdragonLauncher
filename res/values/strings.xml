@@ -261,4 +261,7 @@
     <!-- Accessibility confirmation for widget resize. -->
     <string name="widget_resized">Widget resized to width <xliff:g id="number" example="2">%1$s</xliff:g> height <xliff:g id="number" example="1">%2$s</xliff:g></string>
 
+    <string name="no_permission_hint">You need to allow access: </string>
+    <string name="permission_call_phone">Call Phone</string>
+    <string name="permission_access_external_storage">Access External Storage</string>
 </resources>
