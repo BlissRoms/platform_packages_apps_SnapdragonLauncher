@@ -19,9 +19,12 @@ package com.android.launcher3;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.WallpaperManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -29,12 +32,15 @@ import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
+import android.Manifest.permission;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.Display;
 import android.view.View;
@@ -51,6 +57,7 @@ import com.android.photos.BitmapRegionTileSource.BitmapSource;
 import com.android.photos.BitmapRegionTileSource.BitmapSource.InBitmapProvider;
 import com.android.photos.views.TiledImageRenderer.TileSource;
 
+import java.lang.String;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -60,6 +67,16 @@ public class WallpaperCropActivity extends BaseActivity implements Handler.Callb
 
     protected static final String WALLPAPER_WIDTH_KEY = WallpaperUtils.WALLPAPER_WIDTH_KEY;
     protected static final String WALLPAPER_HEIGHT_KEY = WallpaperUtils.WALLPAPER_HEIGHT_KEY;
+
+    private static final String[] REQUIRED_PERMISSIONS = new String[] {
+            permission.READ_EXTERNAL_STORAGE };
+    private static final int[] ACCESS_PERMISSION_HINT = new int[] {
+            R.string.permission_access_external_storage };
+    private static final int REQUEST_CODE_ASK_PERMISSIONS = 100;
+    private static final int TYPE_CLICK_BUTTON = 1;
+    private static final int TYPE_FROM_OTHER = 2;
+    private int mType;
+    private LoadRequest mReq;
 
     /**
      * The maximum bitmap size we allow to be returned through the intent.
@@ -123,6 +140,10 @@ public class WallpaperCropActivity extends BaseActivity implements Handler.Callb
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        if (!checkRequiredPermission(WallpaperCropActivity.this,
+                                TYPE_CLICK_BUTTON)) {
+                            return;
+                        }
                         boolean finishActivityWhenDone = true;
                         cropImageAndSetWallpaper(imageUri, null, finishActivityWhenDone);
                     }
@@ -273,6 +294,11 @@ public class WallpaperCropActivity extends BaseActivity implements Handler.Callb
         req.postExecute = postExecute;
         req.scaleProvider = scaleProvider;
         mCurrentLoadRequest = req;
+        mReq = req;
+
+        if (!checkRequiredPermission(WallpaperCropActivity.this, TYPE_FROM_OTHER)) {
+            return;
+        }
 
         // Remove any pending requests
         mLoaderHandler.removeMessages(MSG_LOAD_IMAGE);
@@ -449,6 +475,80 @@ public class WallpaperCropActivity extends BaseActivity implements Handler.Callb
         editor.commit();
         WallpaperUtils.suggestWallpaperDimension(getResources(),
                 sp, getWindowManager(), WallpaperManager.getInstance(getContext()), true);
+    }
+
+    private boolean checkRequiredPermission(final Activity activity, int type) {
+        for (int i = 0; i < REQUIRED_PERMISSIONS.length; i++) {
+            final String permission = REQUIRED_PERMISSIONS[i];
+            int hasPermission = ContextCompat.checkSelfPermission(activity, permission);
+            if (hasPermission != PackageManager.PERMISSION_GRANTED) {
+                mType = type;
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
+                    String message = getString(R.string.no_permission_hint) +
+                            getString(ACCESS_PERMISSION_HINT[i]);
+                    showMessageOKCancel(message,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    ActivityCompat.requestPermissions(activity,
+                                            new String[] { permission },
+                                            REQUEST_CODE_ASK_PERMISSIONS);
+                                }
+                            });
+                    return false;
+                }
+                ActivityCompat.requestPermissions(activity, new String[] { permission },
+                        REQUEST_CODE_ASK_PERMISSIONS);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_ASK_PERMISSIONS:
+                for (int i = 0; i < permissions.length; i++) {
+                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                        // Permission Granted
+                        if (mType == TYPE_CLICK_BUTTON) {
+                            boolean finishActivityWhenDone = true;
+                            cropImageAndSetWallpaper(getIntent().getData(), null,
+                                    finishActivityWhenDone);
+                        } else if (mType == TYPE_FROM_OTHER) {
+                            mLoaderHandler.removeMessages(MSG_LOAD_IMAGE);
+                            Message.obtain(mLoaderHandler, MSG_LOAD_IMAGE, mReq).sendToTarget();
+
+                            mProgressView.postDelayed(new Runnable() {
+                                public void run() {
+                                    if (mCurrentLoadRequest == mReq) {
+                                        mProgressView.setVisibility(View.VISIBLE);
+                                    }
+                                }
+                            }, 1000);
+                        }
+                    } else {
+                        // Permission Denied
+                        String message = getString(R.string.no_permission_hint) +
+                                getString(ACCESS_PERMISSION_HINT[i]);
+                        Toast.makeText(WallpaperCropActivity.this, message, Toast.LENGTH_LONG)
+                                .show();
+                    }
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+    private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(WallpaperCropActivity.this)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, okListener)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create()
+                .show();
     }
 
     static class LoadRequest {

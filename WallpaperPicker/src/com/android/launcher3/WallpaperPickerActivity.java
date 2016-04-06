@@ -21,8 +21,10 @@ import android.animation.LayoutTransition;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.WallpaperManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -39,6 +41,8 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.Manifest;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -83,6 +87,7 @@ import com.android.photos.views.TiledImageRenderer.TileSource;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.String;
 import java.util.ArrayList;
 
 public class WallpaperPickerActivity extends WallpaperCropActivity {
@@ -93,6 +98,14 @@ public class WallpaperPickerActivity extends WallpaperCropActivity {
     private static final String TEMP_WALLPAPER_TILES = "TEMP_WALLPAPER_TILES";
     private static final String SELECTED_INDEX = "SELECTED_INDEX";
     private static final int FLAG_POST_DELAY_MILLIS = 200;
+
+    private static final String[] REQUIRED_PERMISSIONS = new String[] {
+            permission.READ_EXTERNAL_STORAGE };
+    private static final int[] ACCESS_PERMISSION_HINT = new int[] {
+            R.string.permission_access_external_storage };
+    private static final int REQUEST_CODE_ASK_PERMISSIONS = 100;
+    private Uri mUri;
+    private boolean mFromRestore;
 
     @Thunk View mSelectedTile;
     @Thunk boolean mIgnoreNextTap;
@@ -735,6 +748,9 @@ public class WallpaperPickerActivity extends WallpaperCropActivity {
     protected void onRestoreInstanceState(Bundle savedInstanceState) {
         ArrayList<Uri> uris = savedInstanceState.getParcelableArrayList(TEMP_WALLPAPER_TILES);
         for (Uri uri : uris) {
+            if (!checkRequiredPermission(WallpaperPickerActivity.this)) {
+                return;
+            }
             addTemporaryWallpaperTile(uri, true);
         }
         mSelectedIndex = savedInstanceState.getInt(SELECTED_INDEX, -1);
@@ -900,6 +916,13 @@ public class WallpaperPickerActivity extends WallpaperCropActivity {
         if (requestCode == IMAGE_PICK && resultCode == Activity.RESULT_OK) {
             if (data != null && data.getData() != null) {
                 Uri uri = data.getData();
+
+                mUri = uri;
+                mFromRestore = false;
+                if (!checkRequiredPermission(WallpaperPickerActivity.this)) {
+                    return;
+                }
+
                 addTemporaryWallpaperTile(uri, false);
             }
         } else if (requestCode == PICK_WALLPAPER_THIRD_PARTY_ACTIVITY
@@ -1156,6 +1179,64 @@ public class WallpaperPickerActivity extends WallpaperCropActivity {
 
     public void startActivityForResultSafely(Intent intent, int requestCode) {
         Utilities.startActivityForResultSafely(getActivity(), intent, requestCode);
+    }
+
+    private boolean checkRequiredPermission(final Activity activity) {
+        for (int i = 0; i < REQUIRED_PERMISSIONS.length; i++) {
+            final String permission = REQUIRED_PERMISSIONS[i];
+            int hasPermission = ContextCompat.checkSelfPermission(activity, permission);
+            if (hasPermission != PackageManager.PERMISSION_GRANTED) {
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
+                    String message = getString(R.string.no_permission_hint) +
+                            getString(ACCESS_PERMISSION_HINT[i]);
+                    showMessageOKCancel(message,
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    ActivityCompat.requestPermissions(activity,
+                                            new String[] { permission },
+                                            REQUEST_CODE_ASK_PERMISSIONS);
+                                }
+                            });
+                    return false;
+                }
+                ActivityCompat.requestPermissions(activity, new String[] { permission },
+                        REQUEST_CODE_ASK_PERMISSIONS);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_ASK_PERMISSIONS:
+                for (int i = 0; i < permissions.length; i++) {
+                    if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                        // Permission Granted
+                        addTemporaryWallpaperTile(mUri, mFromRestore);
+                    } else {
+                        // Permission Denied
+                        String message = getString(R.string.no_permission_hint) +
+                                getString(ACCESS_PERMISSION_HINT[i]);
+                        Toast.makeText(WallpaperPickerActivity.this, message, Toast.LENGTH_LONG)
+                                .show();
+                    }
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+    }
+
+    private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(WallpaperPickerActivity.this)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, okListener)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create()
+                .show();
     }
 
     @Override
