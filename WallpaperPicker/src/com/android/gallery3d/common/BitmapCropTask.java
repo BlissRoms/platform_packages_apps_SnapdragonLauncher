@@ -268,9 +268,12 @@ public class BitmapCropTask extends AsyncTask<Void, Void, Boolean> {
                 Bitmap fullSize = null;
                 if (is != null) {
                     BitmapFactory.Options options = new BitmapFactory.Options();
-                    if (scaleDownSampleSize > 1) {
-                        options.inSampleSize = scaleDownSampleSize;
-                    }
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeStream(is, null, options);
+                    options.inSampleSize = calculateInSampleSize(options, mOutWidth, mOutHeight);
+                    scaleDownSampleSize = options.inSampleSize;
+                    options.inJustDecodeBounds = false;
+                    is = regenerateInputStream();
                     fullSize = BitmapFactory.decodeStream(is, null, options);
                     Utils.closeSilently(is);
                 }
@@ -401,5 +404,19 @@ public class BitmapCropTask extends AsyncTask<Void, Void, Boolean> {
         if (mOnEndRunnable != null) {
             mOnEndRunnable.run();
         }
+    }
+
+    public static int calculateInSampleSize(BitmapFactory.Options options,
+                                            int reqWidth, int reqHeight) {
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+        if (height > reqHeight || width > reqWidth) {
+            final int heightRatio = Math.round((float) height / (float) reqHeight);
+            final int widthRatio = Math.round((float) width / (float) reqWidth);
+
+            inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
+        }
+        return inSampleSize;
     }
 }
