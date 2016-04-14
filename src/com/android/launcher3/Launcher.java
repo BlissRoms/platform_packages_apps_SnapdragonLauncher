@@ -55,6 +55,7 @@ import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.Manifest.permission;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -65,6 +66,8 @@ import android.os.Message;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.Selection;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
@@ -116,6 +119,7 @@ import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.String;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -349,6 +353,17 @@ public class Launcher extends Activity
     // launcher. Since there is no callback for when the activity has finished launching, enable
     // the press state and keep this reference to reset the press state when we return to launcher.
     private BubbleTextView mWaitingForResume;
+
+    private View mPermissionView;
+    private Object mPermissionTag;
+    private Intent mPermissionIntent;
+    private static final int REQUEST_CODE_ASK_PERMISSIONS = 100;
+    private static final String[] REQUIRED_PERMISSIONS = new String[] {
+            permission.CALL_PHONE };
+    private static final String[] TRIGGER_INTENT = new String[] {
+            Intent.ACTION_CALL };
+    private static final int[] ACCESS_PERMISSION_HINT = new int[] {
+            R.string.permission_call_phone };
 
     protected static HashMap<String, CustomAppWidget> sCustomAppWidgets =
             new HashMap<String, CustomAppWidget>();
@@ -867,6 +882,31 @@ public class Launcher extends Activity
     /** @Override for MNC */
     public void onRequestPermissionsResult(int requestCode, String[] permissions,
             int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_ASK_PERMISSIONS:
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission Granted
+                    try {
+                        startActivity(mPermissionView, mPermissionIntent, mPermissionTag);
+                    } catch (ActivityNotFoundException e) {
+                        Toast.makeText(this, R.string.activity_not_found, Toast.LENGTH_SHORT)
+                                .show();
+                    }
+                } else {
+                    // Permission Denied
+                    for (int i = 0; i < TRIGGER_INTENT.length; i++) {
+                        if (mPermissionIntent.getAction().equals(TRIGGER_INTENT[i])) {
+                            String message = getString(R.string.no_permission_hint) +
+                                    getString(ACCESS_PERMISSION_HINT[i]);
+                            Toast.makeText(Launcher.this, message, Toast.LENGTH_LONG).show();
+                        }
+                    }
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+
         if (mLauncherCallbacks != null) {
             mLauncherCallbacks.onRequestPermissionsResult(requestCode, permissions,
                     grantResults);
@@ -2874,7 +2914,7 @@ public class Launcher extends Activity
             Log.e(TAG, "Launcher does not have the permission to launch null intent. " +
                     "Make sure to create a MAIN intent-filter for the corresponding activity " +
                     "or use the exported attribute for this activity. "
-                    + "tag="+ tag + " intent=null");
+                    + "tag=" + tag + " intent=null");
             return false;
         }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -2949,6 +2989,39 @@ public class Launcher extends Activity
             Toast.makeText(this, R.string.safemode_shortcut_error, Toast.LENGTH_SHORT).show();
             return false;
         }
+
+        for (int i = 0; i < TRIGGER_INTENT.length; i++) {
+            if (intent.getAction().equals(TRIGGER_INTENT[i])) {
+                final String requiredPermission = REQUIRED_PERMISSIONS[i];
+                int hasCallPhonePermission = ContextCompat.checkSelfPermission(Launcher.this,
+                        requiredPermission);
+                if (hasCallPhonePermission != PackageManager.PERMISSION_GRANTED) {
+                    mPermissionIntent = intent;
+                    mPermissionTag = tag;
+                    mPermissionView = v;
+                    if (!ActivityCompat.shouldShowRequestPermissionRationale(Launcher.this,
+                            requiredPermission)) {
+                        String message = getString(R.string.no_permission_hint) +
+                                getString(ACCESS_PERMISSION_HINT[i]);
+                        showMessageOKCancel(message,
+                                new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        ActivityCompat.requestPermissions(Launcher.this,
+                                                new String[]{requiredPermission},
+                                                REQUEST_CODE_ASK_PERMISSIONS);
+                                    }
+                                });
+                        return false;
+                    }
+                    ActivityCompat.requestPermissions(Launcher.this,
+                            new String[]{requiredPermission},
+                            REQUEST_CODE_ASK_PERMISSIONS);
+                    return false;
+                }
+            }
+        }
+
         try {
             success = startActivity(v, intent, tag);
         } catch (ActivityNotFoundException e) {
@@ -2956,6 +3029,15 @@ public class Launcher extends Activity
             Log.e(TAG, "Unable to launch. tag=" + tag + " intent=" + intent, e);
         }
         return success;
+    }
+
+    private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(Launcher.this)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, okListener)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create()
+                .show();
     }
 
     /**
