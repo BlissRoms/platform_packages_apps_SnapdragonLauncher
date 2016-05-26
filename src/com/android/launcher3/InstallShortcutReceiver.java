@@ -335,6 +335,21 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
             return null;
         }
 
+        static boolean isValidShortcutLaunchIntent(Intent launchIntent) {
+            if (launchIntent != null
+                    && Intent.ACTION_MAIN.equals(launchIntent.getAction())
+                    && launchIntent.getComponent() != null
+                    && launchIntent.getCategories() != null
+                    && launchIntent.getCategories().size() == 1
+                    && launchIntent.hasCategory(Intent.CATEGORY_LAUNCHER)
+                    && launchIntent.getExtras() == null
+                    && TextUtils.isEmpty(launchIntent.getDataString())) {
+                return false;
+            }
+            return true;
+        }
+        //end
+
         public ShortcutInfo getShortcutInfo() {
             if (activityInfo != null) {
                 return ShortcutInfo.fromActivityInfo(activityInfo, mContext);

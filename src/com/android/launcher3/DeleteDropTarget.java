@@ -46,7 +46,11 @@ public class DeleteDropTarget extends ButtonDropTarget {
         setDrawable(R.drawable.ic_remove_launcher);
     }
 
+    // only for single layour only widget will be removed
     public static boolean supportsDrop(Object info) {
+        if (LauncherAppState.isSingleShow()) {
+            return (info instanceof LauncherAppWidgetInfo);
+        }
         return (info instanceof ShortcutInfo)
                 || (info instanceof LauncherAppWidgetInfo)
                 || (info instanceof FolderInfo);

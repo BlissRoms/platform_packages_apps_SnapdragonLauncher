@@ -1638,6 +1638,28 @@ public class LauncherModel extends BroadcastReceiver
             onlyBindAllApps();
         }
 
+        private void verifyApplications() {
+            final Context context = mApp.getContext();
+
+            // Cross reference all the applications in our apps list with items in the workspace
+            ArrayList<ItemInfo> tmpInfos;
+            ArrayList<ItemInfo> added = new ArrayList<ItemInfo>();
+            synchronized (sBgLock) {
+                for (AppInfo app : mBgAllAppsList.data) {
+                    tmpInfos = getItemInfoForComponentName(app.componentName, app.user);
+                    if (tmpInfos.isEmpty()) {
+                        // We are missing an application icon, so add this to the workspace
+                        added.add(app);
+                        // This is a rare event, so lets log it
+                        Log.e(TAG, "Missing Application on load: " + app);
+                    }
+                }
+            }
+            if (!added.isEmpty()) {
+                addAndBindAddedWorkspaceItems(context, added);
+            }
+        }
+
         public void run() {
             synchronized (mLock) {
                 if (mStopped) {
@@ -1661,6 +1683,10 @@ public class LauncherModel extends BroadcastReceiver
                 // second step
                 if (DEBUG_LOADERS) Log.d(TAG, "step 2: loading all apps");
                 loadAndBindAllApps();
+            }
+
+            if (LauncherAppState.isSingleShow()) {
+                    verifyApplications();
             }
 
             // Clear out this reference, otherwise we end up holding it until all of the
@@ -3183,9 +3209,15 @@ public class LauncherModel extends BroadcastReceiver
                     new HashMap<ComponentName, AppInfo>();
 
             if (added != null) {
-                addAppsToAllApps(context, added);
-                for (AppInfo ai : added) {
-                    addedOrUpdatedApps.put(ai.componentName, ai);
+                if (LauncherAppState.isSingleShow()) {
+                    final ArrayList<ItemInfo> addedInfos = new ArrayList<ItemInfo>(added);
+                    addAndBindAddedWorkspaceItems(context, addedInfos);
+                }
+                else {
+                    addAppsToAllApps(context, added);
+                    for (AppInfo ai : added) {
+                        addedOrUpdatedApps.put(ai.componentName, ai);
+                    }
                 }
             }
 

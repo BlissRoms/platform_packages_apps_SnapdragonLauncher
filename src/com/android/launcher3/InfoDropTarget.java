@@ -62,8 +62,30 @@ public class InfoDropTarget extends ButtonDropTarget {
         }
     }
 
+    /**
+     * Check current launcher's mode is or not single mode.
+     * if in single mode, don't allow remove the shortcut item
+     * show in workspace which represent an application.
+     * <p/>
+     * Notice: if the shortcut item not represent an application, launcher
+     * should allow user delete it.
+     * <p/>
+     *
+     * @param info
+     * @return true if allowed delete, otherwise return false
+     */
+    private boolean checkSingleSupportDrop(Object info) {
+        if ((info instanceof FolderInfo) || (info instanceof LauncherAppWidgetInfo)){
+            return false;
+        }
+        return true;
+    }
+
     @Override
     protected boolean supportsDrop(DragSource source, Object info) {
+        if (LauncherAppState.isSingleShow()) {
+            return checkSingleSupportDrop(info);
+        }
         return source.supportsAppInfoDropTarget() && supportsDrop(getContext(), info);
     }
 

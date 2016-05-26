@@ -3818,8 +3818,10 @@ public class Launcher extends Activity
         // Remove the extra empty screen
         mWorkspace.removeExtraEmptyScreen(false, false);
 
-        if (addedApps != null && mAppsView != null) {
-            mAppsView.addApps(addedApps);
+        if (!LauncherAppState.isSingleShow()) {
+            if (addedApps != null && mAppsView != null) {
+                mAppsView.addApps(addedApps);
+            }
         }
     }
 
@@ -4219,8 +4221,10 @@ public class Launcher extends Activity
             return;
         }
 
-        if (mAppsView != null) {
-            mAppsView.setApps(apps);
+        if (!LauncherAppState.isSingleShow()) {
+            if (mAppsView != null) {
+                mAppsView.setApps(apps);
+            }
         }
         if (mLauncherCallbacks != null) {
             mLauncherCallbacks.bindAllApplications(apps);
@@ -4242,8 +4246,10 @@ public class Launcher extends Activity
             return;
         }
 
-        if (mAppsView != null) {
-            mAppsView.updateApps(apps);
+        if (!LauncherAppState.isSingleShow()) {
+            if (mAppsView != null) {
+                mAppsView.updateApps(apps);
+            }
         }
     }
 
@@ -4352,8 +4358,10 @@ public class Launcher extends Activity
         }
 
         // Update AllApps
-        if (mAppsView != null) {
-            mAppsView.removeApps(appInfos);
+        if (!LauncherAppState.isSingleShow()) {
+            if (mAppsView != null) {
+                mAppsView.removeApps(appInfos);
+            }
         }
     }
 

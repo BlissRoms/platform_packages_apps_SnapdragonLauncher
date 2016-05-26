@@ -183,4 +183,8 @@ public class LauncherAppState {
     public static boolean isDogfoodBuild() {
         return getInstance().mBuildInfo.isDogfoodBuild();
     }
+
+    public static boolean isSingleShow() {
+        return true;
+    }
 }
