@@ -29,6 +29,7 @@ import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageButton;
 
 import com.android.launcher3.util.Thunk;
 
@@ -310,6 +311,14 @@ public class WorkspaceStateTransitionAnimation {
 
         for (int i = 0; i < childCount; i++) {
             final CellLayout cl = (CellLayout) mWorkspace.getChildAt(i);
+            ImageButton defaultHomeBtn = cl.getDefaultHomeBtn();
+            if (defaultHomeBtn != null) {
+                if (!states.stateIsNormal) {
+                    defaultHomeBtn.setVisibility(View.VISIBLE);
+                } else {
+                    defaultHomeBtn.setVisibility(View.INVISIBLE);
+                }
+            }
             boolean isCurrentPage = (i == toPage);
             float initialAlpha = cl.getShortcutsAndWidgets().getAlpha();
             float finalAlpha;

@@ -47,6 +47,7 @@ import android.view.ViewDebug;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageButton;
 
 import com.android.launcher3.BubbleTextView.BubbleTextShadowHandler;
 import com.android.launcher3.FolderIcon.FolderRingAnimator;
@@ -68,6 +69,8 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
 
     static final String TAG = "CellLayout";
 
+    private static final int DEFAULT_HOME_BTN_WIDTH = 120;
+    private static final int DEFAULT_HOME_BTN_HEIGHT = 120;
     private Launcher mLauncher;
     @Thunk int mCellWidth;
     @Thunk int mCellHeight;
@@ -123,6 +126,7 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
     private final Paint mDragOutlinePaint = new Paint();
 
     private final ClickShadowView mTouchFeedbackView;
+    private ImageButton mDefaultHomeButton;
 
     @Thunk HashMap<CellLayout.LayoutParams, Animator> mReorderAnimators = new HashMap<>();
     @Thunk HashMap<View, ReorderPreviewAnimation> mShakeAnimators = new HashMap<>();
@@ -278,9 +282,15 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
 
         mStylusEventHelper = new StylusEventHelper(this);
 
+        mDefaultHomeButton = new ImageButton(context);
+        mDefaultHomeButton.setImageDrawable(getResources().getDrawable(R.drawable.home));
+        mDefaultHomeButton.getBackground().setAlpha(0);
+        mDefaultHomeButton.setVisibility(View.INVISIBLE);
+
         mTouchFeedbackView = new ClickShadowView(context);
         addView(mTouchFeedbackView);
         addView(mShortcutsAndWidgets);
+        addView(mDefaultHomeButton);
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -323,11 +333,21 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if (mUseTouchHelper ||
-                (mInterceptTouchListener != null && mInterceptTouchListener.onTouch(this, ev))) {
-            return true;
+        if (mLauncher.mWorkspace.isInOverviewMode()) {
+            if (isXYInView(mDefaultHomeButton, ev.getX(), ev.getY())) {
+                mLauncher.setDefaultHomeScreen(mLauncher.getWorkspace().indexOfChild(this));
+            }
+            if (mUseTouchHelper || (mInterceptTouchListener != null &&
+                                   mInterceptTouchListener.onTouch(this, ev))) {
+                return true;
+            }
         }
         return false;
+    }
+
+    private boolean isXYInView(View v, float x, float y) {
+        return  ((x >= v.getX()) && (x <= (v.getX() + v.getWidth())) &&
+                    (y >= v.getY()) && (y <= (v.getY() + v.getHeight())));
     }
 
     @Override
@@ -884,6 +904,23 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
         mShortcutsAndWidgets.layout(left, top,
                 left + r - l,
                 top + b - t);
+        if (!mIsHotseat) {
+            if (mLauncher.getWorkspace().indexOfChild(this) == Workspace.sDefaultHomeScreen) {
+                mDefaultHomeButton.setImageDrawable(getResources().
+                    getDrawable(R.drawable.home_select));
+            } else {
+                mDefaultHomeButton.setImageDrawable(getResources().
+                    getDrawable(R.drawable.home));
+            }
+            mDefaultHomeButton.layout((r - l - DEFAULT_HOME_BTN_WIDTH) / 2,
+                    top + b - t - DEFAULT_HOME_BTN_HEIGHT,
+                    (r - l + DEFAULT_HOME_BTN_WIDTH) / 2,
+                    top + b - t + DEFAULT_HOME_BTN_HEIGHT / 2);
+        }
+    }
+
+    public ImageButton getDefaultHomeBtn() {
+        return mDefaultHomeButton;
     }
 
     @Override

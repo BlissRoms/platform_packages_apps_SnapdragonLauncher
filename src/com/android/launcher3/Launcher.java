@@ -212,6 +212,7 @@ public class Launcher extends Activity
     private static final String QSB_WIDGET_ID = "qsb_widget_id";
     private static final String QSB_WIDGET_PROVIDER = "qsb_widget_provider";
 
+    public static final String DEFAULT_HOME_SCREEN_KEY = "default_home_screen";
     public static final String USER_HAS_MIGRATED = "launcher.user_migrated_from_old_data";
 
     /** The different states that Launcher can be in. */
@@ -2490,6 +2491,20 @@ public class Launcher extends Activity
         }
     }
 
+    public void setDefaultHomeScreen(int indexOfCell) {
+         if (indexOfCell != Workspace.sDefaultHomeScreen) {
+             ((CellLayout)mWorkspace.getChildAt(Workspace.sDefaultHomeScreen)).
+                     getDefaultHomeBtn().setImageDrawable(getResources().
+                     getDrawable(R.drawable.home));
+             ((CellLayout)mWorkspace.getChildAt(indexOfCell)).
+                     getDefaultHomeBtn().setImageDrawable(getResources().
+                     getDrawable(R.drawable.home_select));
+
+             Workspace.sDefaultHomeScreen = indexOfCell;
+             mSharedPrefs.edit().putInt(DEFAULT_HOME_SCREEN_KEY, indexOfCell).commit();
+         }
+    }
+
     /**
      * Launches the intent referred by the clicked shortcut.
      *
@@ -2511,12 +2526,6 @@ public class Launcher extends Activity
                 showWorkspace(true);
             }
             return;
-        }
-
-        if (v instanceof CellLayout) {
-            if (mWorkspace.isInOverviewMode()) {
-                showWorkspace(mWorkspace.indexOfChild(v), true);
-            }
         }
 
         Object tag = v.getTag();

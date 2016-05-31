@@ -90,6 +90,9 @@ public class Workspace extends PagedView
         Insettable, UninstallSource, AccessibilityDragSource, Stats.LaunchSourceProvider {
     private static final String TAG = "Launcher.Workspace";
 
+    public static int sDefaultHomeScreen;
+    private static final int DEFAULT_HOME_SCREEN_PAGE = 0;
+
     private static boolean ENFORCE_DRAG_EVENT_ORDER = false;
 
     protected static final int SNAP_OFF_EMPTY_SCREEN_DURATION = 400;
@@ -109,7 +112,6 @@ public class Workspace extends PagedView
     @Thunk IBinder mWindowToken;
 
     private int mOriginalDefaultPage;
-    private int mDefaultPage;
 
     private ShortcutAndWidgetContainer mDragSourceInternal;
 
@@ -326,7 +328,8 @@ public class Workspace extends PagedView
                 res.getInteger(R.integer.config_workspaceSpringLoadShrinkPercentage) / 100.0f;
         mOverviewModeShrinkFactor =
                 res.getInteger(R.integer.config_workspaceOverviewShrinkPercentage) / 100f;
-        mOriginalDefaultPage = mDefaultPage = a.getInt(R.styleable.Workspace_defaultScreen, 1);
+        mOriginalDefaultPage = sDefaultHomeScreen = mLauncher.
+                getSharedPrefs().getInt(Launcher.DEFAULT_HOME_SCREEN_KEY, DEFAULT_HOME_SCREEN_PAGE);
         a.recycle();
 
         setOnHierarchyChangeListener(this);
@@ -432,7 +435,7 @@ public class Workspace extends PagedView
      * Initializes various states for this workspace.
      */
     protected void initWorkspace() {
-        mCurrentPage = mDefaultPage;
+        mCurrentPage = sDefaultHomeScreen;
         LauncherAppState app = LauncherAppState.getInstance();
         DeviceProfile grid = mLauncher.getDeviceProfile();
         mIconCache = app.getIconCache();
@@ -588,7 +591,7 @@ public class Workspace extends PagedView
         addFullScreenPage(customScreen);
 
         // Ensure that the current page and default page are maintained.
-        mDefaultPage = mOriginalDefaultPage + 1;
+        sDefaultHomeScreen = mOriginalDefaultPage + 1;
 
         // Update the custom content hint
         if (mRestorePage != INVALID_RESTORE_PAGE) {
@@ -616,7 +619,7 @@ public class Workspace extends PagedView
         mCustomContentCallbacks = null;
 
         // Ensure that the current page and default page are maintained.
-        mDefaultPage = mOriginalDefaultPage - 1;
+        sDefaultHomeScreen = mOriginalDefaultPage - 1;
 
         // Update the custom content hint
         if (mRestorePage != INVALID_RESTORE_PAGE) {
@@ -4420,7 +4423,7 @@ public class Workspace extends PagedView
     }
 
     void moveToDefaultScreen(boolean animate) {
-        moveToScreen(mDefaultPage, animate);
+        moveToScreen(sDefaultHomeScreen, animate);
     }
 
     void moveToCustomContentScreen(boolean animate) {
