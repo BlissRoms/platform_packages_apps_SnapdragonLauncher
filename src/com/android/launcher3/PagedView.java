@@ -2211,6 +2211,11 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
         mIsReordering = false;
     }
 
+    public void setDragView(View v){
+        int dragViewIndex = indexOfChild(v);
+        mDragView = getChildAt(dragViewIndex);
+    }
+
     public boolean startReordering(View v) {
         int dragViewIndex = indexOfChild(v);
 

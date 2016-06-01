@@ -2441,21 +2441,6 @@ public class LauncherModel extends BroadcastReceiver
                             null, sWorker);
                 }
 
-                // Remove any empty screens
-                ArrayList<Long> unusedScreens = new ArrayList<Long>(sBgWorkspaceScreens);
-                for (ItemInfo item: sBgItemsIdMap) {
-                    long screenId = item.screenId;
-                    if (item.container == LauncherSettings.Favorites.CONTAINER_DESKTOP &&
-                            unusedScreens.contains(screenId)) {
-                        unusedScreens.remove(screenId);
-                    }
-                }
-
-                // If there are any empty screens remove them, and update.
-                if (unusedScreens.size() != 0) {
-                    sBgWorkspaceScreens.removeAll(unusedScreens);
-                    updateWorkspaceScreenOrder(context, sBgWorkspaceScreens);
-                }
 
                 if (DEBUG_LOADERS) {
                     Log.d(TAG, "loaded workspace in " + (SystemClock.uptimeMillis()-t) + "ms");

@@ -106,7 +106,6 @@ public class DeleteDropTarget extends ButtonDropTarget {
 
         if (view != null) {
             launcher.getWorkspace().removeWorkspaceItem(view);
-            launcher.getWorkspace().stripEmptyScreens();
         }
         return true;
     }

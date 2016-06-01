@@ -337,8 +337,16 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
             if (isXYInView(mDefaultHomeButton, ev.getX(), ev.getY())) {
                 mLauncher.setDefaultHomeScreen(mLauncher.getWorkspace().indexOfChild(this));
             }
-            if (mUseTouchHelper || (mInterceptTouchListener != null &&
-                                   mInterceptTouchListener.onTouch(this, ev))) {
+            if (mUseTouchHelper ||
+                    (mInterceptTouchListener != null
+                            && mInterceptTouchListener.onTouch(this, ev))) {
+                ArrayList<Long> workspaceScreens = mLauncher.mWorkspace.getScreenOrder();
+                ArrayList<Long> emptyScreens = mLauncher.getEmptyScreenList();
+                long finalScreenId = workspaceScreens.get(workspaceScreens.size() - 1);
+                long screenId = mLauncher.mWorkspace.getIdForScreen(this);
+                if(screenId == finalScreenId || emptyScreens.indexOf(screenId) != -1){
+                    return false;
+                }
                 return true;
             }
         }

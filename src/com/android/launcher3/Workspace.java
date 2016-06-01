@@ -18,6 +18,8 @@ package com.android.launcher3;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.Keyframe;
 import android.animation.LayoutTransition;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
@@ -49,6 +51,7 @@ import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.util.SparseArray;
+import android.view.animation.AccelerateInterpolator;
 import android.view.Choreographer;
 import android.view.Display;
 import android.view.MotionEvent;
@@ -396,6 +399,7 @@ public class Workspace extends PagedView
         // Prevent any Un/InstallShortcutReceivers from updating the db while we are dragging
         InstallShortcutReceiver.enableInstallQueue();
 
+        removeAddScreen();
         if (mAddNewPageOnDrag) {
             mDeferRemoveExtraEmptyScreen = false;
             addExtraEmptyScreenOnDrag();
@@ -418,6 +422,7 @@ public class Workspace extends PagedView
 
         if (!mDeferRemoveExtraEmptyScreen) {
             removeExtraEmptyScreen(true, mDragSourceInternal != null);
+            removeAddScreen();
         }
 
         mIsDragOccuring = false;
@@ -474,6 +479,18 @@ public class Workspace extends PagedView
     }
     void disableLayoutTransitions() {
         setLayoutTransition(null);
+    }
+    void deleteScreenLayoutTransitions(CellLayout cell) {
+        setDragView(cell);
+        LayoutTransition transitioner = new LayoutTransition();
+        setLayoutTransition(transitioner);
+        ObjectAnimator scaleYAnim = ObjectAnimator.ofFloat(null, "scaleY", 1F,0F);
+        ObjectAnimator scaleXAnim = ObjectAnimator.ofFloat(null, "scaleX", 1F,0F);
+        AnimatorSet set = new AnimatorSet();
+        set.setDuration(500);
+        set.setInterpolator(new AccelerateInterpolator(2));
+        set.play(scaleYAnim).with(scaleXAnim);
+        transitioner.setAnimator(LayoutTransition.DISAPPEARING, set);
     }
 
     @Override
@@ -758,7 +775,6 @@ public class Workspace extends PagedView
         } else if (stripEmptyScreens) {
             // If we're not going to strip the empty screens after removing
             // the extra empty screen, do it right away.
-            stripEmptyScreens();
         }
 
         if (onComplete != null) {
@@ -777,14 +793,6 @@ public class Workspace extends PagedView
         mRemoveEmptyScreenRunnable = new Runnable() {
             @Override
             public void run() {
-                if (hasExtraEmptyScreen()) {
-                    mWorkspaceScreens.remove(EXTRA_EMPTY_SCREEN_ID);
-                    mScreenOrder.remove(EXTRA_EMPTY_SCREEN_ID);
-                    removeView(cl);
-                    if (stripEmptyScreens) {
-                        stripEmptyScreens();
-                    }
-                }
             }
         };
 
@@ -864,6 +872,17 @@ public class Workspace extends PagedView
 
     public ArrayList<Long> getScreenOrder() {
         return mScreenOrder;
+    }
+
+    public void removeAddScreen(){
+        CellLayout cl = mWorkspaceScreens.get(EXTRA_EMPTY_SCREEN_ID);
+        mWorkspaceScreens.remove(EXTRA_EMPTY_SCREEN_ID);
+        mScreenOrder.remove(EXTRA_EMPTY_SCREEN_ID);
+        if(null != cl){
+            removeView(cl);
+        }
+        // Update the model for the new screen
+        mLauncher.getModel().updateWorkspaceScreenOrder(mLauncher, mScreenOrder);
     }
 
     public void stripEmptyScreens() {
@@ -1228,7 +1247,6 @@ public class Workspace extends PagedView
             mDelayedSnapToPageRunnable = null;
         }
         if (mStripScreensOnPageStopMoving) {
-            stripEmptyScreens();
             mStripScreensOnPageStopMoving = false;
         }
 
@@ -3865,7 +3883,11 @@ public class Workspace extends PagedView
             screenId = -1;
             container = Favorites.CONTAINER_HOTSEAT;
         }
-
+        if(count == 0){
+            ItemInfo it = new ItemInfo();
+            LauncherModel.addItemToDatabase(mLauncher, it, container, screenId, 1, 1);
+            return ;
+        }
         for (int i = 0; i < count; i++) {
             View v = cl.getShortcutsAndWidgets().getChildAt(i);
             ItemInfo info = (ItemInfo) v.getTag();
@@ -4284,7 +4306,6 @@ public class Workspace extends PagedView
         }
 
         // Strip all the empty screens
-        stripEmptyScreens();
     }
 
     interface ItemOperator {
