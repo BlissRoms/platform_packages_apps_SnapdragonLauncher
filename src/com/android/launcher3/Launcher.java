@@ -300,7 +300,7 @@ public class Launcher extends Activity
     private Bundle mSavedInstanceState;
 
     private LauncherModel mModel;
-    private IconCache mIconCache;
+    public IconCache mIconCache;
     @Thunk boolean mUserPresent = true;
     private boolean mVisible = false;
     private boolean mHasFocus = false;
@@ -1477,6 +1477,11 @@ public class Launcher extends Activity
         dragController.setScrollView(mDragLayer);
         dragController.setMoveTarget(mWorkspace);
         dragController.addDropTarget(mWorkspace);
+
+        dragController.addDragListener(mHotseat);
+        dragController.setMoveTarget(mHotseat);
+        dragController.addDropTarget(mHotseat);
+
         if (mSearchDropTargetBar != null) {
             mSearchDropTargetBar.setup(this, dragController);
             mSearchDropTargetBar.setQsbSearchBar(getOrCreateQsbBar());
@@ -1540,6 +1545,12 @@ public class Launcher extends Activity
         return favorite;
     }
 
+    public void createHotseatShortcut(BubbleTextView favorite, ShortcutInfo info) {
+        favorite.applyFromShortcutInfo(info, mIconCache);
+        favorite.setCompoundDrawablePadding(mDeviceProfile.iconDrawablePaddingPx);
+        favorite.setOnClickListener(this);
+        favorite.setOnFocusChangeListener(mFocusHandler);
+    }
     /**
      * Add a shortcut to the workspace.
      *
@@ -3117,16 +3128,13 @@ public class Launcher extends Activity
         PropertyValuesHolder scaleY = PropertyValuesHolder.ofFloat("scaleY", 1.5f);
 
         FolderInfo info = (FolderInfo) fi.getTag();
-        if (info.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT) {
-            CellLayout cl = (CellLayout) fi.getParent().getParent();
-            CellLayout.LayoutParams lp = (CellLayout.LayoutParams) fi.getLayoutParams();
-            cl.setFolderLeaveBehindCell(lp.cellX, lp.cellY);
-        }
+
 
         // Push an ImageView copy of the FolderIcon into the DragLayer and hide the original
         copyFolderIconToImage(fi);
-        fi.setVisibility(View.INVISIBLE);
-
+        if (info.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT) {
+            fi.setVisibility(View.INVISIBLE);
+        }
         ObjectAnimator oa = LauncherAnimUtils.ofPropertyValuesHolder(mFolderIconImageView, alpha,
                 scaleX, scaleY);
         if (Utilities.ATLEAST_LOLLIPOP) {
@@ -3183,9 +3191,10 @@ public class Launcher extends Activity
 
         info.opened = true;
 
-        // While the folder is open, the position of the icon cannot change.
-        ((CellLayout.LayoutParams) folderIcon.getLayoutParams()).canReorder = false;
-
+        if(info.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT) {
+            // While the folder is open, the position of the icon cannot change.
+            ((CellLayout.LayoutParams) folderIcon.getLayoutParams()).canReorder = false;
+        }
         // Just verify that the folder hasn't already been added to the DragLayer.
         // There was a one-off crash where the folder had a parent already.
         if (folder.getParent() == null) {
@@ -3306,11 +3315,7 @@ public class Launcher extends Activity
      */
     public CellLayout getCellLayout(long container, long screenId) {
         if (container == LauncherSettings.Favorites.CONTAINER_HOTSEAT) {
-            if (mHotseat != null) {
-                return mHotseat.getLayout();
-            } else {
-                return null;
-            }
+            return null;
         } else {
             return mWorkspace.getScreenWithId(screenId);
         }
@@ -3842,9 +3847,6 @@ public class Launcher extends Activity
         mWorkspace.removeAllWorkspaceScreens();
 
         mWidgetsToAdvance.clear();
-        if (mHotseat != null) {
-            mHotseat.resetLayout();
-        }
     }
 
     @Override
@@ -3961,9 +3963,11 @@ public class Launcher extends Activity
             final ItemInfo item = shortcuts.get(i);
 
             // Short circuit if we are loading dock items for a configuration which has no dock
-            if (item.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT &&
-                    mHotseat == null) {
-                continue;
+            if (item.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT) {
+                if (mHotseat != null) {
+                    mHotseat.setSeat(item,true);
+                    continue;
+                }
             }
 
             final View view;
@@ -4270,6 +4274,14 @@ public class Launcher extends Activity
             return mHotseat.isAllAppsButtonRank(rank);
         }
         return false;
+    }
+
+    @Override
+    public long getOrderInHotseat(int cellX, int cellY) {
+        if (mHotseat != null) {
+            return mHotseat.getOrderInHotseat(cellX, cellY);
+        }
+        return -1;
     }
 
     private boolean canRunNewAppsAnimation() {

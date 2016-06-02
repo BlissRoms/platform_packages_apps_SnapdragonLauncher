@@ -530,6 +530,13 @@ public class DragController {
 
     private void checkTouchMove(DropTarget dropTarget) {
         if (dropTarget != null) {
+            if(mLastDropTarget instanceof  Hotseat && dropTarget instanceof  Workspace){
+                Hotseat.setDragViewVisibility(false);
+                Hotseat.mDragFromWorkspace = false;
+            }else if((mLastDropTarget instanceof  Workspace && dropTarget instanceof  Hotseat)
+                    || (mLastDropTarget instanceof  Folder && dropTarget instanceof  Hotseat)){
+                Hotseat.mDragFromWorkspace = true;
+            }
             if (mLastDropTarget != dropTarget) {
                 if (mLastDropTarget != null) {
                     mLastDropTarget.onDragExit(mDragObject);

@@ -20,6 +20,7 @@ import android.animation.ObjectAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 import android.content.res.TypedArray;
@@ -85,7 +86,7 @@ public class BubbleTextView extends TextView
 
     private final boolean mDeferShadowGenerationOnTouch;
     private final boolean mCustomShadowsEnabled;
-    private final boolean mLayoutHorizontal;
+    private boolean mLayoutHorizontal;
     private final int mIconSize;
     private int mTextColor;
 
@@ -100,6 +101,9 @@ public class BubbleTextView extends TextView
     private final int mFastScrollMode = FAST_SCROLL_FOCUS_MODE_SCALE_ICON;
 
     private IconLoadRequest mIconLoadRequest;
+
+    private boolean mIsHotseat = false;
+    private boolean isLand = false;
 
     public BubbleTextView(Context context) {
         this(context, null, 0);
@@ -161,6 +165,23 @@ public class BubbleTextView extends TextView
         setAccessibilityDelegate(LauncherAppState.getInstance().getAccessibilityDelegate());
     }
 
+    public void setIsHotseat(boolean isHotseat){
+        mIsHotseat = isHotseat;
+    }
+
+    public  boolean isLand(){
+        Configuration configuration = getResources().getConfiguration();
+        int  ori = configuration.orientation;
+        boolean isLand = false;
+        if(ori == configuration.ORIENTATION_LANDSCAPE){
+            isLand = true;
+        }
+        if(ori == configuration.ORIENTATION_PORTRAIT){
+            isLand = false;
+        }
+        return isLand;
+    }
+
     public void applyFromShortcutInfo(ShortcutInfo info, IconCache iconCache) {
         applyFromShortcutInfo(info, iconCache, false);
     }
@@ -177,6 +198,7 @@ public class BubbleTextView extends TextView
             setContentDescription(info.contentDescription);
         }
         setText(info.title);
+        setTextVisibility(!mIsHotseat);
         setTag(info);
 
         if (promiseStateChanged || info.isPromise()) {
@@ -508,6 +530,10 @@ public class BubbleTextView extends TextView
         mIcon = icon;
         if (iconSize != -1) {
             mIcon.setBounds(0, 0, iconSize, iconSize);
+        }
+        isLand = isLand();
+        if(isLand && mIsHotseat){
+            mLayoutHorizontal = true;
         }
         if (mLayoutHorizontal) {
             if (Utilities.ATLEAST_JB_MR1) {

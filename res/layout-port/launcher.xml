@@ -44,11 +44,25 @@
             launcher:pageIndicator="@+id/page_indicator">
         </com.android.launcher3.Workspace>
 
-        <!-- DO NOT CHANGE THE ID -->
-        <include layout="@layout/hotseat"
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom">
+        <com.android.launcher3.Hotseat
             android:id="@+id/hotseat"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="@dimen/hotseat_height"
+            android:layout_gravity="bottom"
+            android:paddingTop="32dp"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp">
+                <include layout="@layout/hotseat_item" />
+                <include layout="@layout/hotseat_item" />
+                <include layout="@layout/hotseat_item" />
+                <include layout="@layout/hotseat_item" />
+                <include layout="@layout/hotseat_item" />
+        </com.android.launcher3.Hotseat>
+    </LinearLayout>
 
         <include layout="@layout/overview_panel"
             android:id="@+id/overview_panel"

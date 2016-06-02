@@ -196,6 +196,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         public int mCellX;
         public int mCellY;
         @Thunk CellLayout mCellLayout;
+        @Thunk Hotseat mHotseat;
         public float mOuterRingSize;
         public float mInnerRingSize;
         public FolderIcon mFolderIcon = null;
@@ -229,11 +230,16 @@ public class FolderIcon extends FrameLayout implements FolderListener {
             }
         }
 
-        public void animateToAcceptState() {
+        public void animateToAcceptState(boolean isHotseat) {
             if (mNeutralAnimator != null) {
                 mNeutralAnimator.cancel();
             }
-            mAcceptAnimator = LauncherAnimUtils.ofFloat(mCellLayout, 0f, 1f);
+            if(!isHotseat){
+                mAcceptAnimator = LauncherAnimUtils.ofFloat(mCellLayout, 0f, 1f);
+            }else {
+                mAcceptAnimator = LauncherAnimUtils.ofFloat(mHotseat, 0f, 1f);
+            }
+
             mAcceptAnimator.setDuration(CONSUMPTION_ANIMATION_DURATION);
 
             final int previewSize = sPreviewSize;
@@ -244,6 +250,9 @@ public class FolderIcon extends FrameLayout implements FolderListener {
                     mInnerRingSize = (1 + percent * INNER_RING_GROWTH_FACTOR) * previewSize;
                     if (mCellLayout != null) {
                         mCellLayout.invalidate();
+                    }
+                    if(mHotseat != null){
+                        mHotseat.invalidate();
                     }
                 }
             });
@@ -258,11 +267,18 @@ public class FolderIcon extends FrameLayout implements FolderListener {
             mAcceptAnimator.start();
         }
 
-        public void animateToNaturalState() {
+        public void animateToNaturalState(boolean isHotseat) {
             if (mAcceptAnimator != null) {
                 mAcceptAnimator.cancel();
             }
-            mNeutralAnimator = LauncherAnimUtils.ofFloat(mCellLayout, 0f, 1f);
+            if(!isHotseat){
+                mNeutralAnimator = LauncherAnimUtils.ofFloat(mCellLayout, 0f, 1f);
+                mNeutralAnimator = LauncherAnimUtils.ofFloat(mCellLayout, 0f, 1f);
+            }else {
+                mNeutralAnimator = LauncherAnimUtils.ofFloat(mHotseat, 0f, 1f);
+                mNeutralAnimator = LauncherAnimUtils.ofFloat(mHotseat, 0f, 1f);
+            }
+
             mNeutralAnimator.setDuration(CONSUMPTION_ANIMATION_DURATION);
 
             final int previewSize = sPreviewSize;
@@ -274,6 +290,9 @@ public class FolderIcon extends FrameLayout implements FolderListener {
                     if (mCellLayout != null) {
                         mCellLayout.invalidate();
                     }
+                    if(mHotseat != null){
+                        mHotseat.invalidate();
+                    }
                 }
             });
             mNeutralAnimator.addListener(new AnimatorListenerAdapter() {
@@ -281,6 +300,9 @@ public class FolderIcon extends FrameLayout implements FolderListener {
                 public void onAnimationEnd(Animator animation) {
                     if (mCellLayout != null) {
                         mCellLayout.hideFolderAccept(FolderRingAnimator.this);
+                    }
+                    if(mHotseat != null){
+                        mHotseat.hideFolderAccept(FolderRingAnimator.this);
                     }
                     if (mFolderIcon != null) {
                         mFolderIcon.mPreviewBackground.setVisibility(VISIBLE);
@@ -304,6 +326,9 @@ public class FolderIcon extends FrameLayout implements FolderListener {
 
         public void setCellLayout(CellLayout layout) {
             mCellLayout = layout;
+        }
+        public  void  setHotseat(Hotseat hotseat){
+            mHotseat = hotseat;
         }
 
         public float getOuterRingSize() {
@@ -341,12 +366,20 @@ public class FolderIcon extends FrameLayout implements FolderListener {
 
     public void onDragEnter(Object dragInfo) {
         if (mFolder.isDestroyed() || !willAcceptItem((ItemInfo) dragInfo)) return;
-        CellLayout.LayoutParams lp = (CellLayout.LayoutParams) getLayoutParams();
-        CellLayout layout = (CellLayout) getParent().getParent();
-        mFolderRingAnimator.setCell(lp.cellX, lp.cellY);
-        mFolderRingAnimator.setCellLayout(layout);
-        mFolderRingAnimator.animateToAcceptState();
-        layout.showFolderAccept(mFolderRingAnimator);
+        if(mInfo.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT){
+            CellLayout.LayoutParams lp = (CellLayout.LayoutParams) getLayoutParams();
+            CellLayout layout = (CellLayout) getParent().getParent();
+            mFolderRingAnimator.setCell(lp.cellX, lp.cellY);
+            mFolderRingAnimator.setCellLayout(layout);
+            mFolderRingAnimator.animateToAcceptState(false);
+            layout.showFolderAccept(mFolderRingAnimator);
+        }else if(mInfo.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT){
+            Hotseat hotseat = (Hotseat) getParent();
+            mFolderRingAnimator.setCell(mInfo.cellX,mInfo.cellY);
+            mFolderRingAnimator.setHotseat(hotseat);
+            mFolderRingAnimator.animateToAcceptState(true);
+            hotseat.showFolderAccept(mFolderRingAnimator);
+        }
         mOpenAlarm.setOnAlarmListener(mOnOpenListener);
         if (SPRING_LOADING_ENABLED &&
                 ((dragInfo instanceof AppInfo) || (dragInfo instanceof ShortcutInfo))) {
@@ -413,7 +446,11 @@ public class FolderIcon extends FrameLayout implements FolderListener {
     }
 
     public void onDragExit() {
-        mFolderRingAnimator.animateToNaturalState();
+        if(mInfo.container != LauncherSettings.Favorites.CONTAINER_HOTSEAT){
+            mFolderRingAnimator.animateToNaturalState(false);
+        }else{
+            mFolderRingAnimator.animateToNaturalState(true);
+        }
         mOpenAlarm.cancelAlarm();
     }
 
@@ -435,7 +472,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
                 to = new Rect();
                 Workspace workspace = mLauncher.getWorkspace();
                 // Set cellLayout and this to it's final state to compute final animation locations
-                workspace.setFinalTransitionTransform((CellLayout) getParent().getParent());
+                workspace.setFinalTransitionTransform();
                 float scaleX = getScaleX();
                 float scaleY = getScaleY();
                 setScaleX(1.0f);
@@ -444,7 +481,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
                 // Finished computing final animation locations, restore current state
                 setScaleX(scaleX);
                 setScaleY(scaleY);
-                workspace.resetTransitionTransform((CellLayout) getParent().getParent());
+                workspace.resetTransitionTransform();
             }
 
             int[] center = new int[2];

@@ -156,6 +156,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     // Folder scrolling
     private int mScrollAreaOffset;
 
+    private  boolean removeFolderFlag = false;
+
     @Thunk int mScrollHintDir = DragController.SCROLL_NONE;
     @Thunk int mCurrentScrollDir = DragController.SCROLL_NONE;
 
@@ -971,8 +973,14 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
         mLauncher.getWorkspace().getPageAreaRelativeToDragLayer(sTempRect);
         int left = Math.min(Math.max(sTempRect.left, centeredLeft),
                 sTempRect.left + sTempRect.width() - width);
+        if(centeredLeft > sTempRect.width()){
+            left += sTempRect.left;
+        }
         int top = Math.min(Math.max(sTempRect.top, centeredTop),
                 sTempRect.top + sTempRect.height() - height);
+        if(centeredTop > sTempRect.height()){
+            top += sTempRect.top;
+        }
         if (grid.isPhone && (grid.availableWidthPx - width) < grid.iconSizePx) {
             // Center the folder if it is full (on phones only)
             left = (grid.availableWidthPx - width) / 2;
@@ -1111,22 +1119,41 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
         Runnable onCompleteRunnable = new Runnable() {
             @Override
             public void run() {
-                CellLayout cellLayout = mLauncher.getCellLayout(mInfo.container, mInfo.screenId);
-
+                ViewGroup viewGroup;
+                boolean isInHotseat = mInfo.container == LauncherSettings.
+                        Favorites.CONTAINER_HOTSEAT;
+                if(isInHotseat) {
+                    viewGroup = mLauncher.getHotseat().getLayout();
+                }else{
+                    viewGroup  = mLauncher.getCellLayout(mInfo.container, mInfo.screenId);
+                }
                 View child = null;
                 // Move the item from the folder to the workspace, in the position of the folder
                 if (getItemCount() == 1) {
                     ShortcutInfo finalItem = mInfo.contents.get(0);
-                    child = mLauncher.createShortcut(cellLayout, finalItem);
-                    LauncherModel.addOrMoveItemInDatabase(mLauncher, finalItem, mInfo.container,
-                            mInfo.screenId, mInfo.cellX, mInfo.cellY);
+                    if(isInHotseat){
+                        int oriCellX = finalItem.cellX;
+                        finalItem.cellX = mInfo.cellX;
+                        if(!removeFolderFlag) {
+                            child = mLauncher.getHotseat().setSeat(finalItem, true);
+                        }
+
+                        removeFolderFlag = false;
+                        finalItem.cellX = oriCellX;
+                        LauncherModel.addOrMoveItemInDatabase(mLauncher, finalItem, mInfo.container,
+                                mInfo.screenId, mInfo.cellX, mInfo.cellY);
+                    }else {
+                        child = mLauncher.createShortcut(viewGroup, finalItem);
+                        LauncherModel.addOrMoveItemInDatabase(mLauncher, finalItem, mInfo.container,
+                                mInfo.screenId, mInfo.cellX, mInfo.cellY);
+                    }
                 }
                 if (getItemCount() <= 1) {
                     // Remove the folder
                     LauncherModel.deleteItemFromDatabase(mLauncher, mInfo);
-                    if (cellLayout != null) {
+                    if (viewGroup != null && !isInHotseat) {
                         // b/12446428 -- sometimes the cell layout has already gone away?
-                        cellLayout.removeView(mFolderIcon);
+                        viewGroup.removeView(mFolderIcon);
                     }
                     if (mFolderIcon instanceof DropTarget) {
                         mDragController.removeDropTarget((DropTarget) mFolderIcon);
@@ -1136,7 +1163,7 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
                 // We add the child after removing the folder to prevent both from existing at
                 // the same time in the CellLayout.  We need to add the new item with addInScreenFromBind()
                 // to ensure that hotseat items are placed correctly.
-                if (child != null) {
+                if (child != null && !isInHotseat) {
                     mLauncher.getWorkspace().addInScreenFromBind(child, mInfo.container, mInfo.screenId,
                             mInfo.cellX, mInfo.cellY, mInfo.spanX, mInfo.spanY);
                 }
@@ -1284,6 +1311,7 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
             rearrangeChildren();
         }
         if (getItemCount() <= 1) {
+            removeFolderFlag = true;
             replaceFolderWithFinalItem();
         }
     }

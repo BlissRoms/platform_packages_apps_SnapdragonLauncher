@@ -42,12 +42,26 @@
             android:layout_gravity="center"
             launcher:defaultScreen="@integer/config_workspaceDefaultScreen" />
 
-        <!-- DO NOT CHANGE THE ID -->
-        <include layout="@layout/hotseat"
-            android:id="@+id/hotseat"
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_gravity="right" />
+            android:orientation="vertical"
+            android:layout_gravity="right">
+            <com.android.launcher3.Hotseat
+                android:id="@+id/hotseat"
+                android:layout_width="@dimen/hotseat_height"
+                android:layout_height="match_parent"
+                android:layout_gravity="right"
+                android:paddingLeft="32dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp">
+                <include layout="@layout/hotseat_item_land" />
+                <include layout="@layout/hotseat_item_land" />
+                <include layout="@layout/hotseat_item_land" />
+                <include layout="@layout/hotseat_item_land" />
+                <include layout="@layout/hotseat_item_land" />
+            </com.android.launcher3.Hotseat>
+        </LinearLayout>
 
         <include
             android:id="@+id/search_drop_target_bar"

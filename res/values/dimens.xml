@@ -16,6 +16,7 @@
 
 <resources>
     <dimen name="app_icon_size">64dp</dimen>
+    <dimen name="hotseat_height">100dip</dimen>
 
 <!-- Dynamic Grid -->
     <dimen name="dynamic_grid_edge_margin">6dp</dimen>
