@@ -34,7 +34,7 @@
 
     <color name="quantum_panel_text_color">#FF666666</color>
     <color name="quantum_panel_bg_color">#FFF5F5F5</color>
-    <color name="quantum_panel_bg_color_dark">#FF374248</color>
+    <color name="quantum_panel_bg_color_dark">#576065</color>
 
     <color name="outline_color">#FFFFFFFF</color>
 
@@ -49,7 +49,7 @@
     <!-- Widgets view -->
     <color name="widgets_view_section_text_color">#FFFFFF</color>
     <color name="widgets_view_item_text_color">#C4C4C4</color>
-    <color name="widgets_cell_color">#263238</color>
+    <color name="widgets_cell_color">#434d52</color>
 
     <color name="infomation_count_circle_color">#F44336</color>
 </resources>

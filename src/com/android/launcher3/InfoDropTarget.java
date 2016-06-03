@@ -75,10 +75,14 @@ public class InfoDropTarget extends ButtonDropTarget {
      * @return true if allowed delete, otherwise return false
      */
     private boolean checkSingleSupportDrop(Object info) {
-        if ((info instanceof FolderInfo) || (info instanceof LauncherAppWidgetInfo)){
-            return false;
+        if (info instanceof ShortcutInfo && ((ShortcutInfo) info).
+                intent.getComponent() != null) {
+            return  true;
+        } else if (info instanceof PendingAddItemInfo && ((PendingAddItemInfo) info).
+                componentName != null) {
+            return  true;
         }
-        return true;
+        return false;
     }
 
     @Override

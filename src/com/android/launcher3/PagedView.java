@@ -1679,7 +1679,8 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
                 if (DEBUG) Log.d(TAG, "mParentDownMotionY: " + mParentDownMotionY);
 
                 final int pageUnderPointIndex = getNearestHoverOverPageIndex();
-                if (pageUnderPointIndex > -1 && pageUnderPointIndex != indexOfChild(mDragView)) {
+                if (pageUnderPointIndex > -1 && pageUnderPointIndex != indexOfChild(mDragView)
+                        && pageUnderPointIndex < getPageCount() - 1) {
                     mTempVisiblePagesRange[0] = 0;
                     mTempVisiblePagesRange[1] = getPageCount() - 1;
                     getFreeScrollPageRange(mTempVisiblePagesRange);

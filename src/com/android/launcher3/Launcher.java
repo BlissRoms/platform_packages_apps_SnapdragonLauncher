@@ -2507,17 +2507,33 @@ public class Launcher extends Activity
     }
 
     public void setDefaultHomeScreen(int indexOfCell) {
-         if (indexOfCell != Workspace.sDefaultHomeScreen) {
-             ((CellLayout)mWorkspace.getChildAt(Workspace.sDefaultHomeScreen)).
-                     getDefaultHomeBtn().setImageDrawable(getResources().
-                     getDrawable(R.drawable.home));
-             ((CellLayout)mWorkspace.getChildAt(indexOfCell)).
-                     getDefaultHomeBtn().setImageDrawable(getResources().
-                     getDrawable(R.drawable.home_select));
+        if (indexOfCell != Workspace.sDefaultHomeScreen) {
+            ((CellLayout)mWorkspace.getChildAt(Workspace.sDefaultHomeScreen)).getDefaultHomeBtn().
+                    setImageDrawable(getResources().getDrawable(R.drawable.home_select));
+            ((CellLayout)mWorkspace.getChildAt(indexOfCell)).getDefaultHomeBtn().
+                    setImageDrawable(getResources().getDrawable(R.drawable.home));
 
-             Workspace.sDefaultHomeScreen = indexOfCell;
-             mSharedPrefs.edit().putInt(DEFAULT_HOME_SCREEN_KEY, indexOfCell).commit();
-         }
+            ((CellLayout) mWorkspace.getChildAt(Workspace.sDefaultHomeScreen)).setIsHomePage(false);
+            ((CellLayout) mWorkspace.getChildAt(indexOfCell)).setIsHomePage(true);
+
+            if(mWorkspace.isInOverviewMode()){
+                ((CellLayout)mWorkspace.getChildAt(Workspace.sDefaultHomeScreen)).
+                        setBackgroundAlpha(0.25f);
+                ((CellLayout)mWorkspace.getChildAt(indexOfCell)).
+                        setBackgroundAlpha(0.45f);
+            }
+
+            Workspace.sDefaultHomeScreen = indexOfCell;
+            mSharedPrefs.edit().putInt(DEFAULT_HOME_SCREEN_KEY, indexOfCell).commit();
+        }
+    }
+
+    public  void initDefaultHomeScreen(int page){
+        ((CellLayout)mWorkspace.getChildAt(page)).getDefaultHomeBtn().
+                setImageDrawable(getResources().getDrawable(R.drawable.home));
+        ((CellLayout) mWorkspace.getChildAt(page)).setIsHomePage(true);
+        Workspace.sDefaultHomeScreen = page;
+        mSharedPrefs.edit().putInt(DEFAULT_HOME_SCREEN_KEY, page).commit();
     }
 
     /**
@@ -2927,7 +2943,7 @@ public class Launcher extends Activity
             String className = componentName.getClassName();
             Intent intent = new Intent(
                     Intent.ACTION_DELETE, Uri.fromParts("package", packageName, className));
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK |
                     Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
             if (user != null) {
                 user.addToIntent(intent, Intent.EXTRA_USER);
@@ -3426,7 +3442,7 @@ public class Launcher extends Activity
         }
     }
 
-    public void deleteScreenLayout(CellLayout cell){
+    public void deleteScreenLayout(final CellLayout cell){
         final CellLayout emptyscreen = cell ;
         LayoutInflater inflater = LayoutInflater.from(this);
         final View contentview = (View)
@@ -3443,6 +3459,15 @@ public class Launcher extends Activity
             public void onClick(View arg0) {
                 mWorkspace.deleteScreenLayoutTransitions(emptyscreen);
                 long screenId = mWorkspace.getIdForScreen(emptyscreen);
+                int defaultHomeScreen = Workspace.sDefaultHomeScreen;
+                int indexOfCell=mWorkspace.getPageIndexForScreen(cell);
+                if(defaultHomeScreen == indexOfCell){
+                    if(indexOfCell != 0) {
+                        setDefaultHomeScreen(indexOfCell - 1);
+                    }else{
+                        setDefaultHomeScreen(indexOfCell);
+                    }
+                }
                 ArrayList<Long> workspaceScreens = mWorkspace.getScreenOrder();
                 workspaceScreens.remove(screenId);
                 mWorkspace.removeView(emptyscreen);

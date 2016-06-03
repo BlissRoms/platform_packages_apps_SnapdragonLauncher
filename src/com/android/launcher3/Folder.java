@@ -820,7 +820,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
 
         boolean beingCalledAfterUninstall = mDeferredAction != null;
         boolean successfulDrop =
-                success && (!beingCalledAfterUninstall || mUninstallSuccessful);
+                success && (!beingCalledAfterUninstall || mUninstallSuccessful)
+                        && !(target instanceof InfoDropTarget);
 
         if (successfulDrop) {
             if (mDeleteFolderOnDropCompleted && !mItemAddedBackToSelfViaIcon && target != this) {

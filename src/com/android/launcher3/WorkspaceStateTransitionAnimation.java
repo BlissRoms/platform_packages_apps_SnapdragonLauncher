@@ -17,6 +17,7 @@
 package com.android.launcher3;
 
 import android.animation.Animator;
+import android.view.animation.Animation;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
@@ -30,7 +31,7 @@ import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.ImageButton;
-
+import android.view.animation.ScaleAnimation;
 import com.android.launcher3.util.Thunk;
 
 import java.util.HashMap;
@@ -190,7 +191,7 @@ public class WorkspaceStateTransitionAnimation {
 
     @Thunk float mCurrentScale;
     @Thunk float mNewScale;
-
+    private float mNeedFixScal;
     @Thunk final ZoomInInterpolator mZoomInInterpolator = new ZoomInInterpolator();
 
     @Thunk float mSpringLoadedShrinkFactor;
@@ -281,6 +282,7 @@ public class WorkspaceStateTransitionAnimation {
                 1.0f : 0f;
         float finalHotseatAndPageIndicatorAlpha = (states.stateIsNormal || states.stateIsSpringLoaded) ?
                 1f : 0f;
+        float finalPageIndicatorAlpha = 1f;
         float finalOverviewPanelAlpha = states.stateIsOverview ? 1f : 0f;
         float finalWorkspaceTranslationY = states.stateIsOverview || states.stateIsOverviewHidden ?
                 mWorkspace.getOverviewModeTranslationY() : 0;
@@ -312,8 +314,26 @@ public class WorkspaceStateTransitionAnimation {
             ImageButton defaultHomeBtn = cl.getDefaultHomeBtn();
             if (defaultHomeBtn != null) {
                 if (!states.stateIsNormal) {
-                    defaultHomeBtn.setVisibility(View.VISIBLE);
+                    mNeedFixScal = 0.1f;
+                    if(i == childCount -1){
+                        defaultHomeBtn.setVisibility(View.INVISIBLE);
+                    }else{
+                        defaultHomeBtn.setVisibility(View.VISIBLE);
+                    }
+
+                    ScaleAnimation sa = new ScaleAnimation(1.0f, 1.0f, 1.0f, 0.9f,
+                            Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF,0f);
+                    cl.getShortcutsAndWidgets().setAnimation(sa);
+                    sa.setDuration(duration);
+                    sa.setFillAfter(true);
+                    sa.startNow();
                 } else {
+                    mNeedFixScal = 0f;
+                    ScaleAnimation sa = new ScaleAnimation(1.0f, 1.0f, 0.9f, 1.0f,
+                            Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF,0f);
+                    cl.getShortcutsAndWidgets().setAnimation(sa);
+                    sa.setDuration(duration);
+                    sa.setFillAfter(true);
                     defaultHomeBtn.setVisibility(View.INVISIBLE);
                 }
             }
@@ -343,6 +363,13 @@ public class WorkspaceStateTransitionAnimation {
 
             mOldAlphas[i] = initialAlpha;
             mNewAlphas[i] = finalAlpha;
+            if(states.stateIsOverview) {
+                if (Workspace.sDefaultHomeScreen == i) {
+                    finalBackgroundAlpha = 0.45f;
+                } else {
+                    finalBackgroundAlpha = 0.25f;
+                }
+            }
             if (animated) {
                 mOldBackgroundAlphas[i] = cl.getBackgroundAlpha();
                 mNewBackgroundAlphas[i] = finalBackgroundAlpha;
@@ -358,7 +385,7 @@ public class WorkspaceStateTransitionAnimation {
         if (animated) {
             LauncherViewPropertyAnimator scale = new LauncherViewPropertyAnimator(mWorkspace);
             scale.scaleX(mNewScale)
-                    .scaleY(mNewScale)
+                    .scaleY(mNewScale + mNeedFixScal)
                     .translationY(finalWorkspaceTranslationY)
                     .setDuration(duration)
                     .setInterpolator(mZoomInInterpolator);
@@ -395,8 +422,25 @@ public class WorkspaceStateTransitionAnimation {
             }
             Animator pageIndicatorAlpha;
             if (pageIndicator != null) {
-                pageIndicatorAlpha = new LauncherViewPropertyAnimator(pageIndicator)
-                        .alpha(finalHotseatAndPageIndicatorAlpha).withLayer();
+                if(states.workspaceToOverview){
+                    pageIndicatorAlpha = new LauncherViewPropertyAnimator(pageIndicator)
+                            .alpha(finalPageIndicatorAlpha)
+                            .translationY((float) (1.7 * finalWorkspaceTranslationY))
+                            .withLayer();
+                }else if(states.overviewToWorkspace ||
+                        (states.oldStateIsOverviewHidden && states.stateIsNormal) ||
+                        (states.oldStateIsOverviewHidden && states.stateIsSpringLoaded)){
+                    pageIndicatorAlpha = new LauncherViewPropertyAnimator(pageIndicator)
+                            .alpha(finalHotseatAndPageIndicatorAlpha)
+                            .translationY((float) (0 - 1.7 * finalWorkspaceTranslationY))
+                            .withLayer();
+                }else if(states.oldStateIsOverviewHidden && states.stateIsOverview){
+                    pageIndicatorAlpha = new LauncherViewPropertyAnimator(pageIndicator)
+                            .alpha(finalPageIndicatorAlpha).withLayer();
+                }else{
+                    pageIndicatorAlpha = new LauncherViewPropertyAnimator(pageIndicator)
+                            .alpha(finalHotseatAndPageIndicatorAlpha).withLayer();
+                }
                 pageIndicatorAlpha.addListener(new AlphaUpdateListener(pageIndicator,
                         accessibilityEnabled));
             } else {
@@ -462,7 +506,19 @@ public class WorkspaceStateTransitionAnimation {
             hotseat.setAlpha(finalHotseatAndPageIndicatorAlpha);
             AlphaUpdateListener.updateVisibility(hotseat, accessibilityEnabled);
             if (pageIndicator != null) {
-                pageIndicator.setAlpha(finalHotseatAndPageIndicatorAlpha);
+                if(states.workspaceToOverview){
+                    pageIndicator.setAlpha(finalPageIndicatorAlpha);
+                    pageIndicator.setTranslationY((float) (1.7 * finalWorkspaceTranslationY));
+                } else if(states.overviewToWorkspace ||
+                        (states.oldStateIsOverviewHidden && states.stateIsNormal) ||
+                        (states.oldStateIsOverviewHidden && states.stateIsSpringLoaded)){
+                    pageIndicator.setAlpha(finalHotseatAndPageIndicatorAlpha);
+                    pageIndicator.setTranslationY((float) (0 - 1.7 * finalWorkspaceTranslationY));
+                } else if(states.oldStateIsOverviewHidden && states.stateIsOverview){
+                    pageIndicator.setAlpha(finalPageIndicatorAlpha);
+                }else{
+                    pageIndicator.setAlpha(finalHotseatAndPageIndicatorAlpha);
+                }
                 AlphaUpdateListener.updateVisibility(pageIndicator, accessibilityEnabled);
             }
             mWorkspace.updateCustomContentVisibility();

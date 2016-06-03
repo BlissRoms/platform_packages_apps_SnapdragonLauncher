@@ -68,9 +68,8 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
     public static final int FOLDER_ACCESSIBILITY_DRAG = 1;
 
     static final String TAG = "CellLayout";
-
-    private static final int DEFAULT_HOME_BTN_WIDTH = 120;
-    private static final int DEFAULT_HOME_BTN_HEIGHT = 120;
+    private static int mHomeBtnWidth;
+    private static int mHomeBtnHeight;
     private Launcher mLauncher;
     @Thunk int mCellWidth;
     @Thunk int mCellHeight;
@@ -127,6 +126,7 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
 
     private final ClickShadowView mTouchFeedbackView;
     private ImageButton mDefaultHomeButton;
+    private boolean isHomePage = false;
 
     @Thunk HashMap<CellLayout.LayoutParams, Animator> mReorderAnimators = new HashMap<>();
     @Thunk HashMap<View, ReorderPreviewAnimation> mShakeAnimators = new HashMap<>();
@@ -283,7 +283,7 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
         mStylusEventHelper = new StylusEventHelper(this);
 
         mDefaultHomeButton = new ImageButton(context);
-        mDefaultHomeButton.setImageDrawable(getResources().getDrawable(R.drawable.home));
+        mDefaultHomeButton.setImageDrawable(getResources().getDrawable(R.drawable.home_select));
         mDefaultHomeButton.getBackground().setAlpha(0);
         mDefaultHomeButton.setVisibility(View.INVISIBLE);
 
@@ -334,20 +334,21 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         if (mLauncher.mWorkspace.isInOverviewMode()) {
-            if (isXYInView(mDefaultHomeButton, ev.getX(), ev.getY())) {
+            ArrayList<Long> workspaceScreens = mLauncher.mWorkspace.getScreenOrder();
+            ArrayList<Long> emptyScreens = mLauncher.getEmptyScreenList();
+            long finalScreenId = workspaceScreens.get(workspaceScreens.size() - 1);
+            long screenId = mLauncher.mWorkspace.getIdForScreen(this);
+            if (isXYInView(mDefaultHomeButton, ev.getX(), ev.getY()) && screenId != finalScreenId) {
                 mLauncher.setDefaultHomeScreen(mLauncher.getWorkspace().indexOfChild(this));
+                return false;
             }
             if (mUseTouchHelper ||
-                    (mInterceptTouchListener != null
-                            && mInterceptTouchListener.onTouch(this, ev))) {
-                ArrayList<Long> workspaceScreens = mLauncher.mWorkspace.getScreenOrder();
-                ArrayList<Long> emptyScreens = mLauncher.getEmptyScreenList();
-                long finalScreenId = workspaceScreens.get(workspaceScreens.size() - 1);
-                long screenId = mLauncher.mWorkspace.getIdForScreen(this);
-                if(screenId == finalScreenId || emptyScreens.indexOf(screenId) != -1){
-                    return false;
-                }
-                return true;
+                    (mInterceptTouchListener != null &&
+                            mInterceptTouchListener.onTouch(this, ev))) {
+            if(screenId == finalScreenId || emptyScreens.indexOf(screenId) != -1){
+                return false;
+            }
+            return true;
             }
         }
         return false;
@@ -914,21 +915,34 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
                 top + b - t);
         if (!mIsHotseat) {
             if (mLauncher.getWorkspace().indexOfChild(this) == Workspace.sDefaultHomeScreen) {
-                mDefaultHomeButton.setImageDrawable(getResources().
-                    getDrawable(R.drawable.home_select));
-            } else {
-                mDefaultHomeButton.setImageDrawable(getResources().
-                    getDrawable(R.drawable.home));
+                mLauncher.initDefaultHomeScreen(mLauncher.getWorkspace().indexOfChild(this));
             }
-            mDefaultHomeButton.layout((r - l - DEFAULT_HOME_BTN_WIDTH) / 2,
-                    top + b - t - DEFAULT_HOME_BTN_HEIGHT,
-                    (r - l + DEFAULT_HOME_BTN_WIDTH) / 2,
-                    top + b - t + DEFAULT_HOME_BTN_HEIGHT / 2);
+            if(this.getIsHomePage()){
+                mLauncher.setDefaultHomeScreen(mLauncher.getWorkspace().indexOfChild(this));
+            }else{
+                mDefaultHomeButton.setImageDrawable(getResources()
+                        .getDrawable(R.drawable.home_select));
+                this.setIsHomePage(false);
+            }
+            mHomeBtnWidth = (int) getResources().getDimension(R.dimen.default_home_btn_width);
+            mHomeBtnHeight = (int) getResources().getDimension(R.dimen.default_home_btn_height);
+            mDefaultHomeButton.layout((r - l - mHomeBtnWidth) / 2,
+                    top + b - t - mHomeBtnHeight,
+                    (r - l + mHomeBtnWidth) / 2,
+                    top + b - t + mHomeBtnHeight / 2);
         }
     }
 
     public ImageButton getDefaultHomeBtn() {
         return mDefaultHomeButton;
+    }
+
+    public  boolean getIsHomePage(){
+        return  isHomePage;
+    }
+
+    public  void setIsHomePage(boolean isHome){
+        isHomePage = isHome;
     }
 
     @Override

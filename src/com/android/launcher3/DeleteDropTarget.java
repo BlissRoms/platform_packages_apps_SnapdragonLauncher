@@ -49,7 +49,8 @@ public class DeleteDropTarget extends ButtonDropTarget {
     // only for single layour only widget will be removed
     public static boolean supportsDrop(Object info) {
         if (LauncherAppState.isSingleShow()) {
-            return (info instanceof LauncherAppWidgetInfo);
+            return (info instanceof LauncherAppWidgetInfo || (info instanceof ItemInfo
+                    && ((ItemInfo)info).itemType == LauncherSettings.Favorites.ITEM_TYPE_SHORTCUT));
         }
         return (info instanceof ShortcutInfo)
                 || (info instanceof LauncherAppWidgetInfo)

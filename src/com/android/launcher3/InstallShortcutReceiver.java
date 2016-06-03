@@ -142,6 +142,10 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
     private static boolean mUseInstallQueue = false;
 
     public void onReceive(Context context, Intent data) {
+        if(!context.getResources().getBoolean(R.bool.enable_show_app_auto_create_shortcut)){
+            return;
+        }
+
         if (!ACTION_INSTALL_SHORTCUT.equals(data.getAction())) {
             return;
         }
@@ -189,7 +193,9 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
     }
     static void disableAndFlushInstallQueue(Context context) {
         mUseInstallQueue = false;
-        flushInstallQueue(context);
+        if(context.getResources().getBoolean(R.bool.enable_show_app_auto_create_shortcut)){
+            flushInstallQueue(context);
+        }
     }
     static void flushInstallQueue(Context context) {
         String spKey = LauncherAppState.getSharedPreferencesKey();

@@ -66,6 +66,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     public static boolean mDragFromWorkspace = false;
     private  boolean dropTargetIsFolder = false;
+    private  boolean mDropTargetIsInfoDrop = false;
 
     int mTargetCell = -1;
     float[] mDragViewVisualCenter = new float[2];
@@ -650,8 +651,10 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                 Favorites.ITEM_TYPE_APPLICATION) {
             bUninstall = true;
         }
-
-        if (isSwap || !success || bUninstall) {
+        if(target instanceof InfoDropTarget){
+            mDropTargetIsInfoDrop = true;
+        }
+        if (isSwap || !success || bUninstall || mDropTargetIsInfoDrop) {
             if (mDragView != null) {
                 mDragView.setVisibility(View.VISIBLE);
             }
@@ -713,12 +716,13 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             return;
         }
         ItemInfo fromInfo = (ItemInfo) mDragInfo;
-        if (fromInfo == null && !isSwap && bSuccess && !bUninstall) {
+        if (fromInfo == null && !isSwap && bSuccess && !bUninstall && !mDropTargetIsInfoDrop) {
             mDragView.setVisibility(View.GONE);
             mDragView.setTag(null);
         }
         bSuccess = true;
         isSwap = false;
+        mDropTargetIsInfoDrop = false;
 
         for (int i = 0; i < MAX_HOTSEAT; i++) {
             View child = getChildAt(i);

@@ -863,6 +863,11 @@ public class Workspace extends PagedView
         return indexOfChild(mWorkspaceScreens.get(screenId));
     }
 
+    public int getPageIndexForScreen(CellLayout layout){
+        long screenId = getIdForScreen(layout);
+        return getPageIndexForScreenId(screenId);
+    }
+
     public long getScreenIdForPageIndex(int index) {
         if (0 <= index && index < mScreenOrder.size()) {
             return mScreenOrder.get(index);
@@ -3737,7 +3742,8 @@ public class Workspace extends PagedView
 
         boolean beingCalledAfterUninstall = mDeferredAction != null;
 
-        if (success && !(beingCalledAfterUninstall && !mUninstallSuccessful)) {
+        if (success && !(beingCalledAfterUninstall && !mUninstallSuccessful)
+                && !(target instanceof InfoDropTarget)) {
             if (target != this && mDragInfo != null) {
                 removeWorkspaceItem(mDragInfo.cell);
             }
@@ -3753,6 +3759,9 @@ public class Workspace extends PagedView
         }
         if ((d.cancelled || (beingCalledAfterUninstall && !mUninstallSuccessful))
                 && mDragInfo.cell != null) {
+            mDragInfo.cell.setVisibility(VISIBLE);
+        }
+        if(target instanceof InfoDropTarget && mDragInfo != null){
             mDragInfo.cell.setVisibility(VISIBLE);
         }
         mDragOutline = null;
