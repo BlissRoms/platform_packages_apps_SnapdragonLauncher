@@ -16,6 +16,7 @@
 
 package com.android.launcher3;
 
+import android.animation.LayoutTransition;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Canvas;
@@ -27,7 +28,6 @@ import android.view.View;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.TranslateAnimation;
 import android.widget.LinearLayout;
 import android.graphics.PointF;
 import com.android.launcher3.DragController.DragListener;
@@ -61,9 +61,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     private final boolean mHasVerticalHotseat;
 
-    private final int[] startLoc = new int[2];
-    private final int[] destLoc = new int[2];
-
     public static boolean mDragFromWorkspace = false;
     private  boolean dropTargetIsFolder = false;
     private  boolean mDropTargetIsInfoDrop = false;
@@ -78,8 +75,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     // These are temporary variables to prevent having to allocate a new object just to
     // return an (x, y) value from helper functions. Do NOT use them to maintain other state.
-    @Thunk
-    final int[] mTmpPoint = new int[2];
     @Thunk final int[] mTempLocation = new int[2];
     private ArrayList<FolderIcon.FolderRingAnimator> mFolderOuterRings =
             new ArrayList<FolderIcon.FolderRingAnimator>();
@@ -388,6 +383,15 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         mContentHotSeat = (Hotseat) findViewById(R.id.hotseat);
         mContentHotSeat.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.MATCH_PARENT, 1.0f));
+
+        LayoutTransition transition = new LayoutTransition();
+        transition.setAnimator(LayoutTransition.APPEARING,null);
+        transition.setAnimator(LayoutTransition.DISAPPEARING, null);
+        transition.setStagger(LayoutTransition.CHANGE_APPEARING, 0);
+        transition.setStagger(LayoutTransition.CHANGE_DISAPPEARING, 0);
+        transition.setAnimateParentHierarchy(true);
+        transition.setDuration(400);
+        mContentHotSeat.setLayoutTransition(transition);
     }
 
     /**
@@ -547,7 +551,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             }
 
             int vericellx = getCellXByPos(mDragPos);
-            if (emptyPos != vericellx && vericellx < getChildCount()) {
+            if (vericellx < getChildCount()) {
                 removeView(emptyView);
                 addView(emptyView, vericellx);
             }
@@ -582,13 +586,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         }
         addView(dragView, cellX);
         mDragPos = pos;
-
-        toView.getLocationOnScreen(startLoc);
-        dragView.getLocationOnScreen(destLoc);
-        TranslateAnimation anim = new TranslateAnimation((startLoc[0] - destLoc[0]),
-                0, (startLoc[1] - destLoc[1]), 0);
-        anim.setDuration(400);
-        toView.startAnimation(anim);
     }
 
     public boolean isDropEnabled() {

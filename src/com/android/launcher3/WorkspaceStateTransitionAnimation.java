@@ -434,7 +434,8 @@ public class WorkspaceStateTransitionAnimation {
                             .alpha(finalHotseatAndPageIndicatorAlpha)
                             .translationY((float) (0 - 1.7 * finalWorkspaceTranslationY))
                             .withLayer();
-                }else if(states.oldStateIsOverviewHidden && states.stateIsOverview){
+                }else if((states.oldStateIsOverviewHidden || states.oldStateIsOverview) &&
+                        states.stateIsOverview){
                     pageIndicatorAlpha = new LauncherViewPropertyAnimator(pageIndicator)
                             .alpha(finalPageIndicatorAlpha).withLayer();
                 }else{
@@ -514,9 +515,10 @@ public class WorkspaceStateTransitionAnimation {
                         (states.oldStateIsOverviewHidden && states.stateIsSpringLoaded)){
                     pageIndicator.setAlpha(finalHotseatAndPageIndicatorAlpha);
                     pageIndicator.setTranslationY((float) (0 - 1.7 * finalWorkspaceTranslationY));
-                } else if(states.oldStateIsOverviewHidden && states.stateIsOverview){
+                } else if((states.oldStateIsOverviewHidden || states.oldStateIsOverview) &&
+                        states.stateIsOverview){
                     pageIndicator.setAlpha(finalPageIndicatorAlpha);
-                }else{
+                } else {
                     pageIndicator.setAlpha(finalHotseatAndPageIndicatorAlpha);
                 }
                 AlphaUpdateListener.updateVisibility(pageIndicator, accessibilityEnabled);
