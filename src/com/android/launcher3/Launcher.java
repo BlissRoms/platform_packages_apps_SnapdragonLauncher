@@ -2520,7 +2520,7 @@ public class Launcher extends Activity
                 ((CellLayout)mWorkspace.getChildAt(Workspace.sDefaultHomeScreen)).
                         setBackgroundAlpha(0.25f);
                 ((CellLayout)mWorkspace.getChildAt(indexOfCell)).
-                        setBackgroundAlpha(0.45f);
+                        setBackgroundAlpha(1.00f);
             }
 
             Workspace.sDefaultHomeScreen = indexOfCell;

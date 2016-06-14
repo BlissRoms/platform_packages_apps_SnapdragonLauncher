@@ -24,6 +24,7 @@ import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -926,11 +927,32 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
             }
             mHomeBtnWidth = (int) getResources().getDimension(R.dimen.default_home_btn_width);
             mHomeBtnHeight = (int) getResources().getDimension(R.dimen.default_home_btn_height);
-            mDefaultHomeButton.layout((r - l - mHomeBtnWidth) / 2,
-                    top + b - t - mHomeBtnHeight,
-                    (r - l + mHomeBtnWidth) / 2,
-                    top + b - t + mHomeBtnHeight / 2);
+
+            if(isLand()){
+                mDefaultHomeButton.layout(r - l - mHomeBtnWidth,
+                        (top + b - t - mHomeBtnHeight) / 2,
+                        r - l + mHomeBtnWidth / 2,
+                        (top + b - t + mHomeBtnHeight) / 2);
+            }else {
+                mDefaultHomeButton.layout((r - l - mHomeBtnWidth) / 2,
+                        top + b - t - mHomeBtnHeight,
+                        (r - l + mHomeBtnWidth) / 2,
+                        top + b - t + mHomeBtnHeight / 2);
+            }
         }
+    }
+
+    public boolean isLand(){
+        Configuration configuration = getResources().getConfiguration();
+        int  ori = configuration.orientation;
+        boolean isLand = false;
+        if(ori == configuration.ORIENTATION_LANDSCAPE){
+            isLand = true;
+        }
+        if(ori == configuration.ORIENTATION_PORTRAIT){
+            isLand = false;
+        }
+        return isLand;
     }
 
     public ImageButton getDefaultHomeBtn() {

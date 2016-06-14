@@ -33,6 +33,8 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     android:gravity="top|right">
     <RelativeLayout
         android:id="@+id/delete_container"
+        android:layout_marginTop="1dp"
+        android:layout_marginRight="5dp"
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:background="@drawable/add_delete_screen_bg">
@@ -44,7 +46,7 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 android:padding="0dp"
                 android:layout_alignParentTop="true"
                 android:layout_alignParentRight="true"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="8dp"
                 android:layout_marginRight="8dp"
                 android:focusable="true" />
     </RelativeLayout>

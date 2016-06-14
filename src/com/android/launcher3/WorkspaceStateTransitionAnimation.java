@@ -312,6 +312,11 @@ public class WorkspaceStateTransitionAnimation {
         for (int i = 0; i < childCount; i++) {
             final CellLayout cl = (CellLayout) mWorkspace.getChildAt(i);
             ImageButton defaultHomeBtn = cl.getDefaultHomeBtn();
+            boolean isEmptyScreen = false;
+            long screenId = mWorkspace.getIdForScreen(cl);
+            if(mLauncher.getEmptyScreenList().indexOf(screenId) != -1){
+                isEmptyScreen = true;
+            }
             if (defaultHomeBtn != null) {
                 if (!states.stateIsNormal) {
                     mNeedFixScal = 0.1f;
@@ -321,16 +326,29 @@ public class WorkspaceStateTransitionAnimation {
                         defaultHomeBtn.setVisibility(View.VISIBLE);
                     }
 
-                    ScaleAnimation sa = new ScaleAnimation(1.0f, 1.0f, 1.0f, 0.9f,
-                            Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF,0f);
+                    ScaleAnimation sa;
+                    if (mWorkspace.isLand() && !isEmptyScreen) {
+                        sa = new ScaleAnimation(1.0f, 0.9f, 1.0f, 1.0f,
+                                Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF, 0f);
+                    } else {
+                        sa = new ScaleAnimation(1.0f, 1.0f, 1.0f, 0.9f,
+                                Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF, 0f);
+                    }
                     cl.getShortcutsAndWidgets().setAnimation(sa);
                     sa.setDuration(duration);
                     sa.setFillAfter(true);
                     sa.startNow();
                 } else {
                     mNeedFixScal = 0f;
-                    ScaleAnimation sa = new ScaleAnimation(1.0f, 1.0f, 0.9f, 1.0f,
-                            Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF,0f);
+
+                    ScaleAnimation sa;
+                    if(mWorkspace.isLand() && !isEmptyScreen){
+                        sa = new ScaleAnimation(0.9f, 1.0f, 1.0f, 1.0f,
+                                Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF,0f);
+                    }else {
+                        sa = new ScaleAnimation(1.0f, 1.0f, 0.9f, 1.0f,
+                                Animation.RELATIVE_TO_SELF, 0f, Animation.RELATIVE_TO_SELF,0f);
+                    }
                     cl.getShortcutsAndWidgets().setAnimation(sa);
                     sa.setDuration(duration);
                     sa.setFillAfter(true);
@@ -365,7 +383,7 @@ public class WorkspaceStateTransitionAnimation {
             mNewAlphas[i] = finalAlpha;
             if(states.stateIsOverview) {
                 if (Workspace.sDefaultHomeScreen == i) {
-                    finalBackgroundAlpha = 0.45f;
+                    finalBackgroundAlpha = 1.00f;
                 } else {
                     finalBackgroundAlpha = 0.25f;
                 }
@@ -384,11 +402,19 @@ public class WorkspaceStateTransitionAnimation {
         final View pageIndicator = mWorkspace.getPageIndicator();
         if (animated) {
             LauncherViewPropertyAnimator scale = new LauncherViewPropertyAnimator(mWorkspace);
-            scale.scaleX(mNewScale)
-                    .scaleY(mNewScale + mNeedFixScal)
-                    .translationY(finalWorkspaceTranslationY)
-                    .setDuration(duration)
-                    .setInterpolator(mZoomInInterpolator);
+            if(mWorkspace.isLand()){
+                scale.scaleX(mNewScale + mNeedFixScal)
+                        .scaleY(mNewScale)
+                        .translationY(finalWorkspaceTranslationY)
+                        .setDuration(duration)
+                        .setInterpolator(mZoomInInterpolator);
+            }else {
+                scale.scaleX(mNewScale)
+                        .scaleY(mNewScale + mNeedFixScal)
+                        .translationY(finalWorkspaceTranslationY)
+                        .setDuration(duration)
+                        .setInterpolator(mZoomInInterpolator);
+            }
             mStateAnimator.play(scale);
             for (int index = 0; index < childCount; index++) {
                 final int i = index;

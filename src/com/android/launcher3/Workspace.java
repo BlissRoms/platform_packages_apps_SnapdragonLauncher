@@ -31,6 +31,7 @@ import android.appwidget.AppWidgetProviderInfo;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
@@ -1698,6 +1699,19 @@ public class Workspace extends PagedView
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         mWindowToken = null;
+    }
+
+    public boolean isLand(){
+        Configuration configuration = getResources().getConfiguration();
+        int  ori = configuration.orientation;
+        boolean isLand = false;
+        if(ori == configuration.ORIENTATION_LANDSCAPE){
+            isLand = true;
+        }
+        if(ori == configuration.ORIENTATION_PORTRAIT){
+            isLand = false;
+        }
+        return isLand;
     }
 
     protected void onResume() {
