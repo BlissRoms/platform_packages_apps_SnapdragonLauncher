@@ -147,6 +147,13 @@ public class WidgetsModel {
                 Log.e(TAG, String.format("Widget cannot be set for %s.", o.getClass().toString()));
                 continue;
             }
+
+            if (("com.android.quicksearchbox".equals(componentName.getPackageName())) &&
+                    ("com.android.quicksearchbox.SearchWidgetProvider"
+                    .equals(componentName.getClassName()))) {
+                continue;
+            }
+
             if (mAppFilter != null && !mAppFilter.shouldShowApp(componentName)) {
                 if (DEBUG) {
                     Log.d(TAG, String.format("%s is filtered and not added to the widget tray.",
