@@ -92,10 +92,16 @@ public abstract class ButtonDropTarget extends TextView
         // drawableLeft and drawableStart.
         mDrawable = getResources().getDrawable(resId);
 
-        if (Utilities.ATLEAST_JB_MR1) {
-            setCompoundDrawablesRelativeWithIntrinsicBounds(mDrawable, null, null, null);
+        boolean isVerticalBarLayout = ((Launcher) getContext()).getDeviceProfile()
+                .isVerticalBarLayout();
+        if(isVerticalBarLayout){
+            setCompoundDrawablesWithIntrinsicBounds(null, mDrawable, null, null);
         } else {
-            setCompoundDrawablesWithIntrinsicBounds(mDrawable, null, null, null);
+            if (Utilities.ATLEAST_JB_MR1) {
+                setCompoundDrawablesRelativeWithIntrinsicBounds(mDrawable, null, null, null);
+            } else {
+                setCompoundDrawablesWithIntrinsicBounds(mDrawable, null, null, null);
+            }
         }
     }
 

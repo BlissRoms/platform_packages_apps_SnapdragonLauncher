@@ -200,6 +200,7 @@ public class WorkspaceStateTransitionAnimation {
     @Thunk int mAllAppsTransitionTime;
     @Thunk int mOverviewTransitionTime;
     @Thunk int mOverlayTransitionTime;
+    @Thunk int mOverHiddenTransitionTime;
     @Thunk boolean mWorkspaceFadeInAdjacentScreens;
 
     public WorkspaceStateTransitionAnimation(Launcher launcher, Workspace workspace) {
@@ -211,6 +212,7 @@ public class WorkspaceStateTransitionAnimation {
         mAllAppsTransitionTime = res.getInteger(R.integer.config_allAppsTransitionTime);
         mOverviewTransitionTime = res.getInteger(R.integer.config_overviewTransitionTime);
         mOverlayTransitionTime = res.getInteger(R.integer.config_overlayTransitionTime);
+        mOverHiddenTransitionTime = res.getInteger(R.integer.config_overhiddenTransitionTime);
         mSpringLoadedShrinkFactor =
                 res.getInteger(R.integer.config_workspaceSpringLoadShrinkPercentage) / 100f;
         mOverviewModeShrinkFactor =
@@ -257,6 +259,8 @@ public class WorkspaceStateTransitionAnimation {
             return mAllAppsTransitionTime;
         } else if (states.workspaceToOverview || states.overviewToWorkspace) {
             return mOverviewTransitionTime;
+        } else if(states.oldStateIsOverviewHidden && states.stateIsOverview){
+            return mOverHiddenTransitionTime;
         } else {
             return mOverlayTransitionTime;
         }
@@ -385,7 +389,7 @@ public class WorkspaceStateTransitionAnimation {
                 if (Workspace.sDefaultHomeScreen == i) {
                     finalBackgroundAlpha = 1.00f;
                 } else {
-                    finalBackgroundAlpha = 0.25f;
+                    finalBackgroundAlpha = 0.40f;
                 }
             }
             if (animated) {
@@ -403,7 +407,7 @@ public class WorkspaceStateTransitionAnimation {
         if (animated) {
             LauncherViewPropertyAnimator scale = new LauncherViewPropertyAnimator(mWorkspace);
             if(mWorkspace.isLand()){
-                scale.scaleX(mNewScale + mNeedFixScal)
+                scale.scaleX(mNewScale)
                         .scaleY(mNewScale)
                         .translationY(finalWorkspaceTranslationY)
                         .setDuration(duration)

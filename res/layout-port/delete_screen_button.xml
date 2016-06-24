@@ -33,21 +33,16 @@ IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     android:gravity="top|right">
     <RelativeLayout
         android:id="@+id/delete_container"
-        android:layout_marginTop="1dp"
-        android:layout_marginRight="5dp"
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:background="@drawable/add_delete_screen_bg">
             <TextView
                 android:id="@+id/delete_btn"
                 style="@style/Icon"
-                android:layout_width="10dp"
-                android:layout_height="10dp"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
                 android:padding="0dp"
-                android:layout_alignParentTop="true"
-                android:layout_alignParentRight="true"
-                android:layout_marginTop="8dp"
-                android:layout_marginRight="8dp"
+                android:layout_centerInParent="true"
                 android:focusable="true" />
     </RelativeLayout>
 </RelativeLayout>

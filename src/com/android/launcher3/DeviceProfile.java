@@ -396,7 +396,7 @@ public class DeviceProfile {
             targets.setOrientation(LinearLayout.VERTICAL);
             FrameLayout.LayoutParams targetsLp = (FrameLayout.LayoutParams) targets.getLayoutParams();
             targetsLp.gravity = Gravity.TOP;
-            targetsLp.height = LayoutParams.WRAP_CONTENT;
+            targetsLp.height = searchBarSpaceHeightPx * 3;
 
         } else {
             // Horizontal search bar space
