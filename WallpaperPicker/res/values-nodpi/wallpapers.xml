@@ -17,5 +17,7 @@
 
 <resources>
     <string-array name="wallpapers" translatable="false">
+        <item>ic_launcher_wallpaper0</item>
+        <item>ic_launcher_wallpaper1</item>
     </string-array>
 </resources>
