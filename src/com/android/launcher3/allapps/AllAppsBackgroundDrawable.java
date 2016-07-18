@@ -25,7 +25,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 
 import android.view.Gravity;
-import com.android.launcher3.R;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * A helper class to positon and orient a drawable to be drawn.

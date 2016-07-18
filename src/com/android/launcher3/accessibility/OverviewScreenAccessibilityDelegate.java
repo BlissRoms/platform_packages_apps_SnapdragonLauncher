@@ -25,9 +25,9 @@ import android.view.View;
 import android.view.View.AccessibilityDelegate;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction;
-import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.Workspace;
+import org.codeaurora.snaplauncher.R;
 
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class OverviewScreenAccessibilityDelegate extends AccessibilityDelegate {

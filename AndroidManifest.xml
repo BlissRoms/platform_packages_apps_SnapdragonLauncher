@@ -19,7 +19,7 @@
 -->
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.launcher3">
+    package="org.codeaurora.snaplauncher">
     <uses-sdk android:targetSdkVersion="23" android:minSdkVersion="16"/>
 
     <permission
@@ -212,7 +212,7 @@
         <!-- The settings provider contains Home's data, like the workspace favorites -->
         <provider
             android:name="com.android.launcher3.LauncherProvider"
-            android:authorities="com.android.launcher3.settings"
+            android:authorities="org.codeaurora.snaplauncher.settings"
             android:exported="true"
             android:writePermission="com.android.launcher3.permission.WRITE_SETTINGS"
             android:readPermission="com.android.launcher3.permission.READ_SETTINGS" />

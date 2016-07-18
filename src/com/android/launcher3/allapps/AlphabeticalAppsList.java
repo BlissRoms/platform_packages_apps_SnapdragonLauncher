@@ -24,7 +24,6 @@ import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.compat.AlphabeticIndexCompat;
 import com.android.launcher3.compat.UserHandleCompat;
 import com.android.launcher3.model.AppNameComparator;
-import com.android.launcher3.R;
 import com.android.launcher3.util.ComponentKey;
 import com.android.launcher3.xml.ComponentInfo;
 import com.android.launcher3.xml.ComponentParserImpl;
@@ -37,6 +36,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * The alphabetically sorted list of applications.
