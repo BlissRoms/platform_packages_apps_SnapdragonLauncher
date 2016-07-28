@@ -3500,8 +3500,6 @@ public class Launcher extends Activity
             @Override
             public void onClick(View arg0) {
                  mWorkspace.commitExtraEmptyScreen();
-                 mWorkspace.saveWorkspaceScreenToDb((CellLayout)mWorkspace
-                     .getChildAt(mWorkspace.getChildCount()-1));
                  mWorkspace.addExtraEmptyScreen();
 
                  int finalIndex = mWorkspace.getChildCount()-1 ;
@@ -3515,6 +3513,7 @@ public class Launcher extends Activity
     }
 
     void showOverviewMode(boolean animated) {
+        if (isWorkspaceLocked())return;
         mWorkspace.addExtraEmptyScreen();
         AddScreenLayout();
         mWorkspace.setVisibility(View.VISIBLE);
