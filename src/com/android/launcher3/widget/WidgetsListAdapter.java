@@ -35,13 +35,13 @@ import com.android.launcher3.DeviceProfile;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherAppWidgetProviderInfo;
-import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.WidgetPreviewLoader;
 import com.android.launcher3.model.PackageItemInfo;
 import com.android.launcher3.model.WidgetsModel;
 
 import java.util.List;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * List view adapter for the widget tray.

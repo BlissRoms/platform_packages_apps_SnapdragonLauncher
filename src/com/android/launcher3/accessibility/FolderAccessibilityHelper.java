@@ -18,7 +18,7 @@ package com.android.launcher3.accessibility;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.FolderPagedView;
-import com.android.launcher3.R;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * Implementation of {@link DragAndDropAccessibilityDelegate} to support DnD in a folder.

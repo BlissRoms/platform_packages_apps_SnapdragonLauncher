@@ -16,7 +16,6 @@ import com.android.launcher3.InsettableFrameLayout;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAnimUtils;
 import com.android.launcher3.LauncherCallbacks;
-import com.android.launcher3.R;
 import com.android.launcher3.allapps.AllAppsSearchBarController;
 import com.android.launcher3.util.ComponentKey;
 
@@ -24,6 +23,7 @@ import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * This class represents a very trivial LauncherExtension. It primarily serves as a simple

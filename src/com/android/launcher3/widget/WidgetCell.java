@@ -36,11 +36,11 @@ import com.android.launcher3.ItemInfo;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.LauncherAppWidgetProviderInfo;
-import com.android.launcher3.R;
 import com.android.launcher3.StylusEventHelper;
 import com.android.launcher3.WidgetPreviewLoader;
 import com.android.launcher3.WidgetPreviewLoader.PreviewLoadRequest;
 import com.android.launcher3.compat.AppWidgetManagerCompat;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * Represents the individual cell of the widget inside the widget tray. The preview is drawn

@@ -41,12 +41,12 @@ import com.android.launcher3.ItemInfo;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.PendingAddItemInfo;
-import com.android.launcher3.R;
 import com.android.launcher3.Utilities;
 import com.android.launcher3.WidgetPreviewLoader;
 import com.android.launcher3.Workspace;
 import com.android.launcher3.model.WidgetsModel;
 import com.android.launcher3.util.Thunk;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * The widgets list view container.

@@ -42,9 +42,10 @@
 #LOCAL_AAPT_FLAGS := \
 #    --auto-add-overlay \
 #    --extra-packages android.support.v7.recyclerview
+#LOCAL_AAPT_FLAGS += --rename-manifest-package org.codeaurora.snaplauncher
 
 #LOCAL_SDK_VERSION := current
-#LOCAL_PACKAGE_NAME := Launcher3
+#LOCAL_PACKAGE_NAME := SnapdragonLauncher
 #LOCAL_PRIVILEGED_MODULE := true
 #LOCAL_CERTIFICATE := shared
 

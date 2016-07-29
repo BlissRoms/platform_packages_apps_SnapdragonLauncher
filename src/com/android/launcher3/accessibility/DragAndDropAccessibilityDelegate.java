@@ -27,9 +27,9 @@ import android.view.accessibility.AccessibilityEvent;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.LauncherAppState;
-import com.android.launcher3.R;
 
 import java.util.List;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * Helper class to make drag-and-drop in a {@link CellLayout} accessible.
