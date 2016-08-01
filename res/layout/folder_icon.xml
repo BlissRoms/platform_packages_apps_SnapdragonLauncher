@@ -33,4 +33,7 @@
         android:layout_gravity="top"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+    <TextView
+        android:id="@+id/folder_unread"
+        style="@style/FolderUnreadAppearance"/>
 </com.android.launcher3.FolderIcon>

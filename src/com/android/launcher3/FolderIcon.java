@@ -20,6 +20,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
@@ -29,6 +30,10 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
 import android.os.Parcelable;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.style.AbsoluteSizeSpan;
+import android.text.style.SuperscriptSpan;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -92,6 +97,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
 
     @Thunk ImageView mPreviewBackground;
     @Thunk BubbleTextView mFolderName;
+    @Thunk TextView mUnread;
 
     FolderRingAnimator mFolderRingAnimator = null;
 
@@ -116,6 +122,27 @@ public class FolderIcon extends FrameLayout implements FolderListener {
 
     private Alarm mOpenAlarm = new Alarm();
     @Thunk ItemInfo mDragInfo;
+
+    private static final SpannableStringBuilder sExceedString = new SpannableStringBuilder("999+");
+
+    static {
+        sExceedString.setSpan(new SuperscriptSpan(), 3, 3,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        sExceedString.setSpan(new AbsoluteSizeSpan(10), 3, 3,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+
+    private CharSequence getExceedText() {
+        return sExceedString;
+    }
+
+    private CharSequence getDisplayText(int unreadNum) {
+        if (unreadNum > 999) {
+            return getExceedText();
+        } else {
+            return String.valueOf(unreadNum);
+        }
+    }
 
     public FolderIcon(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -157,6 +184,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         icon.mFolderName = (BubbleTextView) icon.findViewById(R.id.folder_icon_name);
         icon.mFolderName.setText(folderInfo.title);
         icon.mFolderName.setCompoundDrawablePadding(0);
+        icon.mUnread = (TextView) icon.findViewById(R.id.folder_unread);
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) icon.mFolderName.getLayoutParams();
         lp.topMargin = grid.iconSizePx + grid.iconDrawablePaddingPx;
 
@@ -720,6 +748,30 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         va.start();
     }
 
+    public void updateFolderUnreadNum() {
+        final ArrayList<ShortcutInfo> contents = mInfo.contents;
+        final int contentsCount = contents.size();
+        int unreadNumTotal = 0;
+        for (int i = 0; i < contentsCount; i++) {
+            final ShortcutInfo shortcutInfo = contents.get(i);
+            final ComponentName componentName = shortcutInfo.intent.getComponent();
+            final int unreadNum = mLauncher.getUnreadNumberOfComponent(componentName);
+            if (unreadNum > 0) {
+                unreadNumTotal += unreadNum;
+            }
+        }
+        setFolderUnreadNum(unreadNumTotal);
+    }
+
+    public void setFolderUnreadNum(int unreadNum) {
+        if (unreadNum <= 0) {
+            mUnread.setVisibility(View.GONE);
+        } else {
+            mUnread.setText(getDisplayText(unreadNum));
+            mUnread.setVisibility(View.VISIBLE);
+        }
+    }
+
     public void setTextVisible(boolean visible) {
         if (visible) {
             mFolderName.setVisibility(VISIBLE);
@@ -738,11 +790,13 @@ public class FolderIcon extends FrameLayout implements FolderListener {
     }
 
     public void onAdd(ShortcutInfo item) {
+        updateFolderUnreadNum();
         invalidate();
         requestLayout();
     }
 
     public void onRemove(ShortcutInfo item) {
+        updateFolderUnreadNum();
         invalidate();
         requestLayout();
     }

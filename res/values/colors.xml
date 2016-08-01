@@ -52,4 +52,6 @@
     <color name="widgets_cell_color">#434d52</color>
 
     <color name="infomation_count_circle_color">#F44336</color>
+
+    <color name="msg_hint_color">#fff</color>
 </resources>

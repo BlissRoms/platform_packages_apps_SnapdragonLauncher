@@ -214,6 +214,7 @@ public class LauncherModel extends BroadcastReceiver
         public void onPageBoundSynchronously(int page);
         public void dumpLogsToLocalData();
         public long getOrderInHotseat(int cellX, int cellY);
+        public void bindUnreadMapUpdate(ComponentName component, int unreadNum);
     }
 
     private HashMap<ComponentName, UnreadInfo> mUnreadChangedMap =
@@ -296,6 +297,10 @@ public class LauncherModel extends BroadcastReceiver
         private boolean unreadContains(ArrayList<AppInfo> unreadList, ComponentName cn) {
             for (AppInfo info : unreadList) {
                 if (info.componentName.equals(cn)) {
+                    Callbacks callbacks = getCallback();
+                    if (callbacks != null) {
+                        callbacks.bindUnreadMapUpdate(cn, info.unreadNum);
+                    }
                     return true;
                 }
             }

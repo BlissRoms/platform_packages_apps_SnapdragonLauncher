@@ -383,6 +383,7 @@ public class Launcher extends Activity
     protected static HashMap<String, CustomAppWidget> sCustomAppWidgets =
             new HashMap<String, CustomAppWidget>();
 
+    private Map mUnreadAppMap = new HashMap<ComponentName, Integer>();
     private static final boolean ENABLE_CUSTOM_WIDGET_TEST = false;
     static {
         if (ENABLE_CUSTOM_WIDGET_TEST) {
@@ -427,22 +428,29 @@ public class Launcher extends Activity
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             IGetUnreadNumber iGetUnreadNumber = IGetUnreadNumber.Stub.asInterface(service);
-            Map unreadAppMap = new HashMap<ComponentName, Integer>();
 
             try {
                 if(iGetUnreadNumber != null){
-                    unreadAppMap = iGetUnreadNumber.GetUnreadNumber();
+                    mUnreadAppMap = iGetUnreadNumber.GetUnreadNumber();
                 }
             } catch (RemoteException ex) {
             }
 
-            mIconCache.setUnreadMap(unreadAppMap);
+            mIconCache.setUnreadMap(mUnreadAppMap);
             unbindService(mConnection);
         }
         @Override
         public void onServiceDisconnected(ComponentName name) {
         }
     };
+
+    public int getUnreadNumberOfComponent(ComponentName componentName) {
+        int unreadNum = -1;
+        if(mUnreadAppMap.containsKey(componentName)){
+            unreadNum = (int) mUnreadAppMap.get(componentName);
+        }
+        return unreadNum;
+    }
 
     private Runnable mUpdateOrientationRunnable = new Runnable() {
         public void run() {
@@ -573,14 +581,17 @@ public class Launcher extends Activity
             showFirstRunClings();
         }
 
-        if(mIconCache.getAppIconReload()) {
-            Intent intent = new Intent();
-            ComponentName componentName = new ComponentName(LAUNCHER_UNREAD_SERVICE_PACKAGENAME,
-                    LAUNCHER_UNREAD_SERVICE_CLASSNAME);
-            intent.setComponent(componentName);
-            final Intent eintent = new Intent(Utilities.
-                    createExplicitFromImplicitIntent(this, intent));
-            bindService(eintent, mConnection, Context.BIND_AUTO_CREATE);
+        Intent intent = new Intent();
+        ComponentName componentName = new ComponentName(LAUNCHER_UNREAD_SERVICE_PACKAGENAME,
+                LAUNCHER_UNREAD_SERVICE_CLASSNAME);
+        intent.setComponent(componentName);
+        final Intent eintent = new Intent(Utilities.createExplicitFromImplicitIntent(this, intent));
+        bindService(eintent, mConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    public void bindUnreadMapUpdate(ComponentName componentName, int unreadNum) {
+        if (mUnreadAppMap.containsKey(componentName)) {
+            mUnreadAppMap.put(componentName, unreadNum);
         }
     }
 
