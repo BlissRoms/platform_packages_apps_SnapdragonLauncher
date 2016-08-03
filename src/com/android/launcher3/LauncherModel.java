@@ -1395,6 +1395,7 @@ public class LauncherModel extends BroadcastReceiver
      * of doing it now.
      */
     public void startLoaderFromBackground() {
+        mIconCache.setAppIconReloaded(true);
         boolean runLoader = false;
         Callbacks callbacks = getCallback();
         if (callbacks != null) {
@@ -2958,6 +2959,7 @@ public class LauncherModel extends BroadcastReceiver
                 }
             }
             mBgAllAppsList.updateIconsAndLabels(updatedPackages, user, updatedApps);
+            mIconCache.setAppIconReloaded(false);
         }
 
         if (!updatedShortcuts.isEmpty()) {
