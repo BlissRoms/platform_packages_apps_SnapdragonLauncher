@@ -23,10 +23,12 @@ import android.animation.ValueAnimator.AnimatorUpdateListener;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
 import android.os.Parcelable;
@@ -165,6 +167,16 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         final ViewGroup cellLayout = (ViewGroup) cellLayoutChildren.getParent();
         final Workspace workspace = (Workspace) cellLayout.getParent();
         return !workspace.workspaceInModalState();
+    }
+
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
+        int t = mPreviewBackground.getTop();
+        int r = mPreviewBackground.getRight();
+        int uwidth = mUnread.getMeasuredWidth();
+        int uheight = mUnread.getMeasuredHeight();
+        mUnread.layout(r - uwidth * 10 / 9, t + uheight / 4, r - uwidth / 9, t + uheight * 5 / 4);
     }
 
     static FolderIcon fromXml(int resId, Launcher launcher, ViewGroup group,
@@ -451,14 +463,15 @@ public class FolderIcon extends FrameLayout implements FolderListener {
 
         // This will animate the first item from it's position as an icon into its
         // position as the first item in the preview
-        animateFirstItem(animateDrawable, INITIAL_ITEM_ANIMATION_DURATION, false, null);
+        animateFirstItem(animateDrawable, INITIAL_ITEM_ANIMATION_DURATION, false, null, srcInfo);
         addItem(destInfo);
 
         // This will animate the dragView (srcView) into the new folder
         onDrop(srcInfo, srcView, dstRect, scaleRelativeToDragLayer, 1, postAnimationRunnable, null);
     }
 
-    public void performDestroyAnimation(final View finalView, Runnable onCompleteRunnable) {
+    public void performDestroyAnimation(final View finalView, Runnable onCompleteRunnable,
+                                        final ShortcutInfo shortcutInfo) {
         Drawable animateDrawable = getTopDrawable((TextView) finalView);
         computePreviewDrawingParams(animateDrawable.getIntrinsicWidth(),
                 finalView.getMeasuredWidth());
@@ -466,7 +479,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         // This will animate the first item from it's position as an icon into its
         // position as the first item in the preview
         animateFirstItem(animateDrawable, FINAL_ITEM_ANIMATION_DURATION, true,
-                onCompleteRunnable);
+                onCompleteRunnable ,shortcutInfo);
     }
 
     public void onDragExit(Object dragInfo) {
@@ -596,6 +609,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         float scale;
         int overlayAlpha;
         Drawable drawable;
+        ShortcutInfo info;
     }
 
     private float getLocalCenterForIndex(int index, int[] center) {
@@ -644,6 +658,13 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         canvas.translate(params.transX + mPreviewOffsetX, params.transY + mPreviewOffsetY);
         canvas.scale(params.scale, params.scale);
         Drawable d = params.drawable;
+        ShortcutInfo shortcutInfo = params.info;
+
+        Bitmap bitmap = mLauncher.mIconCache.getEntryForPackageLocked(shortcutInfo.getIntent().
+                getComponent().getPackageName(), shortcutInfo.user, false).icon;
+        if (mLauncher.getUnreadMap().containsKey(shortcutInfo.getIntent().getComponent())) {
+            d = new BitmapDrawable(bitmap);
+        }
 
         if (d != null) {
             mOldBounds.set(d.getBounds());
@@ -675,6 +696,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         ArrayList<View> items = mFolder.getItemsInReadingOrder();
         Drawable d;
         TextView v;
+        ShortcutInfo shortcutInfo;
 
         // Update our drawing parameters if necessary
         if (mAnimating) {
@@ -691,8 +713,10 @@ public class FolderIcon extends FrameLayout implements FolderListener {
                 v = (TextView) items.get(i);
                 if (!mHiddenItems.contains(v.getTag())) {
                     d = getTopDrawable(v);
+                    shortcutInfo = (ShortcutInfo) v.getTag();
                     mParams = computePreviewItemDrawingParams(i, mParams);
                     mParams.drawable = d;
+                    mParams.info = shortcutInfo;
                     drawPreviewItem(canvas, mParams);
                 }
             }
@@ -707,7 +731,8 @@ public class FolderIcon extends FrameLayout implements FolderListener {
     }
 
     private void animateFirstItem(final Drawable d, int duration, final boolean reverse,
-            final Runnable onCompleteRunnable) {
+                                  final Runnable onCompleteRunnable,
+                                  final ShortcutInfo shortcutInfo) {
         final PreviewItemDrawingParams finalParams = computePreviewItemDrawingParams(0, null);
 
         float iconSize = mLauncher.getDeviceProfile().iconSizePx;
@@ -715,6 +740,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         final float transX0 = (mAvailableSpaceInPreview - iconSize) / 2;
         final float transY0 = (mAvailableSpaceInPreview - iconSize) / 2 + getPaddingTop();
         mAnimParams.drawable = d;
+        mAnimParams.info = shortcutInfo;
 
         ValueAnimator va = LauncherAnimUtils.ofFloat(this, 0f, 1.0f);
         va.addUpdateListener(new AnimatorUpdateListener(){

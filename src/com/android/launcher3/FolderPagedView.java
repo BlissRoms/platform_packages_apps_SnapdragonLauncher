@@ -218,6 +218,7 @@ public class FolderPagedView extends PagedView {
 
         textView.setLayoutParams(new CellLayout.LayoutParams(
                 item.cellX, item.cellY, item.spanX, item.spanY));
+        mFolder.mFolderIcon.updateFolderUnreadNum();
         return textView;
     }
 

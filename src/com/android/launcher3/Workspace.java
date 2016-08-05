@@ -4316,6 +4316,30 @@ public class Workspace extends PagedView
                 }
             }
         }
+
+        int hotseatCnt = mLauncher.getHotseat().getChildCount();
+        for (int j = 0; j < hotseatCnt; j++) {
+            final View item = mLauncher.getHotseat().getChildAt(j);
+            ItemInfo info = (ItemInfo) item.getTag();
+            if (recurse && info instanceof FolderInfo && item instanceof FolderIcon) {
+                FolderIcon folder = (FolderIcon) item;
+                folder.updateFolderUnreadNum();
+                ArrayList<View> folderChildren = folder.getFolder().getItemsInReadingOrder();
+                // map over all the children in the folder
+                final int childCount = folderChildren.size();
+                for (int childIdx = 0; childIdx < childCount; childIdx++) {
+                    View child = folderChildren.get(childIdx);
+                    info = (ItemInfo) child.getTag();
+                    if (op.evaluate(info, child, folder)) {
+                        return;
+                    }
+                }
+            } else {
+                if (op.evaluate(info, item, null)) {
+                    return;
+                }
+            }
+        }
     }
 
     void updateShortcuts(ArrayList<ShortcutInfo> shortcuts) {

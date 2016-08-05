@@ -444,6 +444,10 @@ public class Launcher extends Activity
         }
     };
 
+    public Map getUnreadMap() {
+        return mUnreadAppMap;
+    }
+
     public int getUnreadNumberOfComponent(ComponentName componentName) {
         int unreadNum = -1;
         if(mUnreadAppMap.containsKey(componentName)){
@@ -3297,7 +3301,8 @@ public class Launcher extends Activity
         folder.getInfo().opened = false;
 
         ViewGroup parent = (ViewGroup) folder.getParent().getParent();
-        if (parent != null) {
+        if (parent != null && folder.mInfo.container !=
+                LauncherSettings.Favorites.CONTAINER_HOTSEAT) {
             FolderIcon fi = (FolderIcon) mWorkspace.getViewForTag(folder.mInfo);
             shrinkAndFadeInFolderIcon(fi);
             if (fi != null) {

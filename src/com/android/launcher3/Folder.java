@@ -1171,8 +1171,9 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
             }
         };
         View finalChild = mContent.getLastItem();
+        ShortcutInfo shortcutInfo = (ShortcutInfo) finalChild.getTag();
         if (finalChild != null) {
-            mFolderIcon.performDestroyAnimation(finalChild, onCompleteRunnable);
+            mFolderIcon.performDestroyAnimation(finalChild, onCompleteRunnable, shortcutInfo);
         } else {
             onCompleteRunnable.run();
         }

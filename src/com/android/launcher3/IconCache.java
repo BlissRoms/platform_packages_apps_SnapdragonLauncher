@@ -633,7 +633,7 @@ public class IconCache {
      * Gets an entry for the package, which can be used as a fallback entry for various components.
      * This method is not thread safe, it must be called from a synchronized method.
      */
-    private CacheEntry getEntryForPackageLocked(String packageName, UserHandleCompat user,
+    public CacheEntry getEntryForPackageLocked(String packageName, UserHandleCompat user,
             boolean useLowResIcon) {
         ComponentKey cacheKey = getPackageKey(packageName, user);
         CacheEntry entry = mCache.get(cacheKey);
