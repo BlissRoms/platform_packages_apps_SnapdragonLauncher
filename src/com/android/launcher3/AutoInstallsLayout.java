@@ -47,6 +47,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 
+import org.codeaurora.snaplauncher.R;
+
 /**
  * Layout parsing code for auto installs layout
  */

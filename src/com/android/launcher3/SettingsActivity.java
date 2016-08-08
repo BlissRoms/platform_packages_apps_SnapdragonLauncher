@@ -22,6 +22,7 @@ import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.PreferenceFragment;
 import android.preference.SwitchPreference;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * Settings activity for Launcher. Currently implements the following setting: Allow rotation

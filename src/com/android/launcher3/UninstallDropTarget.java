@@ -11,6 +11,7 @@ import android.util.Pair;
 import com.android.launcher3.compat.UserHandleCompat;
 import com.android.launcher3.util.Thunk;
 import org.codeaurora.snaplauncher.R;
+import org.codeaurora.snaplauncher.R;
 
 public class UninstallDropTarget extends ButtonDropTarget {
 

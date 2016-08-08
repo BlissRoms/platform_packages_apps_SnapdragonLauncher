@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import org.codeaurora.snaplauncher.R;
 
 public class WidgetPreviewLoader {
 

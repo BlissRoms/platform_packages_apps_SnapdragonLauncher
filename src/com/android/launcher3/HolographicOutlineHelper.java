@@ -28,6 +28,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.SparseArray;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * Utility class to generate shadow and outline effect, which are used for click feedback

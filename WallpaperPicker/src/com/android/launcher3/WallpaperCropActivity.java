@@ -62,6 +62,8 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
 
+import org.codeaurora.snaplauncher.R;
+
 public class WallpaperCropActivity extends BaseActivity implements Handler.Callback {
     private static final String LOGTAG = "Launcher3.CropActivity";
 

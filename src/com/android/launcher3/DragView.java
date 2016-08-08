@@ -37,6 +37,8 @@ import com.android.launcher3.util.Thunk;
 
 import java.util.Arrays;
 
+import org.codeaurora.snaplauncher.R;
+
 public class DragView extends View {
     public static int COLOR_CHANGE_DURATION = 120;
 

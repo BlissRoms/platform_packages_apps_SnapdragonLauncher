@@ -15,7 +15,7 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.android.launcher3.tests">
+    package="org.codeaurora.snaplauncher.tests">
 
     <application>
         <uses-library android:name="android.test.runner" />
@@ -23,7 +23,7 @@
 
     <instrumentation
         android:name="android.test.InstrumentationTestRunner"
-        android:targetPackage="com.android.launcher3"
-        android:label="Unit tests for Launcher3">
+        android:targetPackage="org.codeaurora.snaplauncher"
+        android:label="Unit tests for snapdragon launcher">
     </instrumentation>
 </manifest>

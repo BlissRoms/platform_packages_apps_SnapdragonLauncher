@@ -44,6 +44,7 @@ import com.android.launcher3.util.Thunk;
 
 import java.util.ArrayList;
 
+import org.codeaurora.snaplauncher.R;
 /**
  * A ViewGroup that coordinates dragging across its descendants
  */

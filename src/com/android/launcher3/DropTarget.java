@@ -19,6 +19,8 @@ package com.android.launcher3;
 import android.graphics.PointF;
 import android.graphics.Rect;
 
+import org.codeaurora.snaplauncher.R;
+
 /**
  * Interface defining an object that can receive a drag.
  *

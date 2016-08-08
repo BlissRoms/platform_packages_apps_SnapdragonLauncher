@@ -136,6 +136,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.qti.launcherunreadservice.IGetUnreadNumber;
+import org.codeaurora.snaplauncher.R;
 /**
  * Default launcher application.
  */

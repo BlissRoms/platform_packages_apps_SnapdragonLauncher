@@ -1,6 +1,7 @@
 package com.android.launcher3;
 
 import android.appwidget.AppWidgetProviderInfo;
+import org.codeaurora.snaplauncher.R;
 
 public class DummyWidget implements CustomAppWidget {
     @Override

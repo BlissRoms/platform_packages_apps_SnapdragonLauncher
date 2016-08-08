@@ -27,6 +27,8 @@ import android.view.animation.AnimationUtils;
 import com.android.launcher3.util.FlingAnimation;
 import com.android.launcher3.util.Thunk;
 
+import org.codeaurora.snaplauncher.R;
+
 public class DeleteDropTarget extends ButtonDropTarget {
 
     public DeleteDropTarget(Context context, AttributeSet attrs) {

@@ -30,8 +30,8 @@ LOCAL_AAPT_FLAGS := --auto-add-overlay
 
 LOCAL_SDK_VERSION := 21
 
-LOCAL_PACKAGE_NAME := Launcher3Tests
+LOCAL_PACKAGE_NAME := SnapdragonLauncherTests
 
-LOCAL_INSTRUMENTATION_FOR := Launcher3
+LOCAL_INSTRUMENTATION_FOR := SnapdragonLauncher
 
 include $(BUILD_PACKAGE)

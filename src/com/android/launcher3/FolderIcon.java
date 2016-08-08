@@ -46,6 +46,7 @@ import com.android.launcher3.FolderInfo.FolderListener;
 import com.android.launcher3.util.Thunk;
 
 import java.util.ArrayList;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * An icon that can appear on in the workspace representing an {@link UserFolder}.
