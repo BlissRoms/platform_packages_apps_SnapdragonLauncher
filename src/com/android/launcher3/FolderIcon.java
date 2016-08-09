@@ -167,6 +167,8 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         lp.width = grid.folderIconSizePx;
         lp.height = grid.folderIconSizePx;
 
+        folderInfo.unbind();
+
         icon.setTag(folderInfo);
         icon.setOnClickListener(launcher);
         icon.mInfo = folderInfo;
