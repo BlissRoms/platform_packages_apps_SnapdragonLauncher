@@ -665,7 +665,8 @@ public class FolderIcon extends FrameLayout implements FolderListener {
 
         Bitmap bitmap = mLauncher.mIconCache.getEntryForPackageLocked(shortcutInfo.getIntent().
                 getComponent().getPackageName(), shortcutInfo.user, false).icon;
-        if (mLauncher.getUnreadMap().containsKey(shortcutInfo.getIntent().getComponent())) {
+        if (LauncherAppState.getInstance().getModel().getUnreadMap()
+                .containsKey(shortcutInfo.getIntent().getComponent())) {
             d = new BitmapDrawable(bitmap);
         }
 
@@ -784,7 +785,8 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         for (int i = 0; i < contentsCount; i++) {
             final ShortcutInfo shortcutInfo = contents.get(i);
             final ComponentName componentName = shortcutInfo.intent.getComponent();
-            final int unreadNum = mLauncher.getUnreadNumberOfComponent(componentName);
+            final int unreadNum = LauncherAppState.getInstance().getModel()
+                    .getUnreadNumberOfComponent(componentName);
             if (unreadNum > 0) {
                 unreadNumTotal += unreadNum;
             }
