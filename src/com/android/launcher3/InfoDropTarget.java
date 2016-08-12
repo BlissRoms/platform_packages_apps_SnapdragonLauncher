@@ -21,6 +21,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 
 import com.android.launcher3.compat.UserHandleCompat;
+import org.codeaurora.snaplauncher.R;
 
 public class InfoDropTarget extends ButtonDropTarget {
 

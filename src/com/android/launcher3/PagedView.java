@@ -52,6 +52,7 @@ import com.android.launcher3.util.LauncherEdgeEffect;
 import com.android.launcher3.util.Thunk;
 
 import java.util.ArrayList;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * An abstraction of the original Workspace which supports browsing through a

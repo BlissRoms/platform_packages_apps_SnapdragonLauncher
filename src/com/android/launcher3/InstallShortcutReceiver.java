@@ -46,6 +46,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.codeaurora.snaplauncher.R;
+
 public class InstallShortcutReceiver extends BroadcastReceiver {
     private static final String TAG = "InstallShortcutReceiver";
     private static final boolean DBG = false;

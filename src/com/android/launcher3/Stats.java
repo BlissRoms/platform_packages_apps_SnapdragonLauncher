@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewParent;
+import org.codeaurora.snaplauncher.R;
 
 public class Stats {
 

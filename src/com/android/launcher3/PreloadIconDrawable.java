@@ -11,6 +11,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import org.codeaurora.snaplauncher.R;
 
 class PreloadIconDrawable extends Drawable {
 

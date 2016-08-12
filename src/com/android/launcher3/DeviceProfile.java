@@ -33,6 +33,8 @@ import android.view.ViewGroup.MarginLayoutParams;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
+import org.codeaurora.snaplauncher.R;
+
 public class DeviceProfile {
 
     public final InvariantDeviceProfile inv;

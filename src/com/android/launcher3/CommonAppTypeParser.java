@@ -32,6 +32,8 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
 
+import org.codeaurora.snaplauncher.R;
+
 /**
  * A class that parses content values corresponding to some common app types.
  */

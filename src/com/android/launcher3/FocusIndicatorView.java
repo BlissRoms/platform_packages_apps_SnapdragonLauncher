@@ -25,6 +25,7 @@ import android.util.Pair;
 import android.view.View;
 
 import com.android.launcher3.util.Thunk;
+import org.codeaurora.snaplauncher.R;
 
 public class FocusIndicatorView extends View implements View.OnFocusChangeListener {
 

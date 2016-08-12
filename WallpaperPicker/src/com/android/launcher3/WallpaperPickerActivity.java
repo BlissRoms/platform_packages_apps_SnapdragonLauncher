@@ -90,6 +90,8 @@ import java.io.IOException;
 import java.lang.String;
 import java.util.ArrayList;
 
+import org.codeaurora.snaplauncher.R;
+
 public class WallpaperPickerActivity extends WallpaperCropActivity {
     static final String TAG = "Launcher.WallpaperPickerActivity";
 

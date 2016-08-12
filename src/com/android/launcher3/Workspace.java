@@ -82,6 +82,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * The workspace is a wide area with a wallpaper and a finite number of pages.

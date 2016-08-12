@@ -32,6 +32,7 @@
 
     <!-- Application name -->
     <string name="application_name">Launcher3</string>
+    <string name="snaplauncher_app_name">Snapdragon Launcher</string>
     <!-- Default folder name -->
     <string name="folder_name"></string>
     <!-- Work folder name -->

@@ -14,6 +14,8 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
+import org.codeaurora.snaplauncher.R;
+
 public class AppWidgetResizeFrame extends FrameLayout {
     private static final int SNAP_DURATION = 150;
     private static final float DIMMED_HANDLE_ALPHA = 0f;

@@ -34,6 +34,7 @@ import android.text.TextPaint;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.View.OnClickListener;
+import org.codeaurora.snaplauncher.R;
 
 public class PendingAppWidgetHostView extends LauncherAppWidgetHostView implements OnClickListener {
     private static final float SETUP_ICON_SIZE_FACTOR = 2f / 5;

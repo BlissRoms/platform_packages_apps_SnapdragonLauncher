@@ -31,6 +31,8 @@ import android.view.ViewConfiguration;
 
 import com.android.launcher3.util.Thunk;
 
+import org.codeaurora.snaplauncher.R;
+
 /**
  * The track and scrollbar that shows when you scroll the list.
  */

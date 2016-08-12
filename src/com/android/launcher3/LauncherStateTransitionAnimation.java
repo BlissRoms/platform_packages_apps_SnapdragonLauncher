@@ -35,6 +35,7 @@ import com.android.launcher3.util.Thunk;
 import com.android.launcher3.widget.WidgetsContainerView;
 
 import java.util.HashMap;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * TODO: figure out what kind of tests we can write for this

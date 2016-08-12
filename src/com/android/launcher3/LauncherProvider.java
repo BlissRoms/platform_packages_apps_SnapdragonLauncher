@@ -63,6 +63,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import org.codeaurora.snaplauncher.R;
 
 public class LauncherProvider extends ContentProvider {
     private static final String TAG = "LauncherProvider";

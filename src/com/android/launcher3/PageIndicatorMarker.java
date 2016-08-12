@@ -21,6 +21,7 @@ import android.content.res.Resources;
 import android.util.AttributeSet;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import org.codeaurora.snaplauncher.R;
 
 public class PageIndicatorMarker extends FrameLayout {
     @SuppressWarnings("unused")

@@ -57,6 +57,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * Cache of application icons.  Icons can be made from any thread.

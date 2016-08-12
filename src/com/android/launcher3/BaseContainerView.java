@@ -22,6 +22,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.LinearLayout;
 
+import org.codeaurora.snaplauncher.R;
 /**
  * A base container view, which supports resizing.
  */

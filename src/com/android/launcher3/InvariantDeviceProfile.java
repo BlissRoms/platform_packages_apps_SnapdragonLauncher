@@ -29,6 +29,7 @@ import com.android.launcher3.util.Thunk;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import org.codeaurora.snaplauncher.R;
 
 public class InvariantDeviceProfile {
 

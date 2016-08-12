@@ -24,6 +24,7 @@ import android.view.LayoutInflater;
 import android.widget.LinearLayout;
 
 import java.util.ArrayList;
+import org.codeaurora.snaplauncher.R;
 
 public class PageIndicator extends LinearLayout {
     @SuppressWarnings("unused")

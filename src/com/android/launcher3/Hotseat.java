@@ -34,7 +34,7 @@ import com.android.launcher3.DragController.DragListener;
 import com.android.launcher3.util.Thunk;
 
 import java.util.ArrayList;
-
+import org.codeaurora.snaplauncher.R;
 public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     OnLongClickListener, DragListener {
 
