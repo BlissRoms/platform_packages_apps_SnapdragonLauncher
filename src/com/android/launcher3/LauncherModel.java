@@ -1737,8 +1737,12 @@ public class LauncherModel extends BroadcastReceiver
             final int countY = profile.numRows;
 
             long containerIndex = item.screenId;
-            if (item.container == LauncherSettings.Favorites.CONTAINER_HOTSEAT
-                || item.container != LauncherSettings.Favorites.CONTAINER_DESKTOP) {
+            if (item.container == LauncherSettings.Favorites.CONTAINER_DESKTOP) {
+                if (!workspaceScreens.contains((Long) item.screenId)) {
+                    // The item has an invalid screen id.
+                    return false;
+                }
+            } else {
                 // Skip further checking if it is not the hotseat or workspace container
                 return true;
             }
