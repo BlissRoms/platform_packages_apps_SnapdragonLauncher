@@ -157,8 +157,6 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     // Folder scrolling
     private int mScrollAreaOffset;
 
-    private  boolean removeFolderFlag = false;
-
     @Thunk int mScrollHintDir = DragController.SCROLL_NONE;
     @Thunk int mCurrentScrollDir = DragController.SCROLL_NONE;
 
@@ -1136,11 +1134,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
                     if(isInHotseat){
                         int oriCellX = finalItem.cellX;
                         finalItem.cellX = mInfo.cellX;
-                        if(!removeFolderFlag) {
-                            child = mLauncher.getHotseat().setSeat(finalItem, true);
-                        }
+                        child = mLauncher.getHotseat().setSeat(finalItem, true);
 
-                        removeFolderFlag = false;
                         finalItem.cellX = oriCellX;
                         LauncherModel.addOrMoveItemInDatabase(mLauncher, finalItem, mInfo.container,
                                 mInfo.screenId, mInfo.cellX, mInfo.cellY);
@@ -1314,7 +1309,6 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
             rearrangeChildren();
         }
         if (getItemCount() <= 1) {
-            removeFolderFlag = true;
             replaceFolderWithFinalItem();
         }
     }
