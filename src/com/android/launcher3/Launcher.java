@@ -438,12 +438,23 @@ public class Launcher extends Activity
             }
 
             mModel.setUnreadMap(unreadAppMap);
+            updateUnreadIcon(unreadAppMap);
             unbindService(mConnection);
         }
         @Override
         public void onServiceDisconnected(ComponentName name) {
         }
     };
+
+    private void updateUnreadIcon(Map unreadMap) {
+        Iterator iter = unreadMap.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry entry = (Map.Entry) iter.next();
+            ComponentName componentName = (ComponentName) entry.getKey();
+            int unreadNumber = (int) entry.getValue();
+            mModel.postUnreadTask(componentName, unreadNumber);
+        }
+    }
 
     private Runnable mUpdateOrientationRunnable = new Runnable() {
         public void run() {

@@ -1381,13 +1381,17 @@ public class LauncherModel extends BroadcastReceiver
             int unreadNum = intent.getIntExtra(EXTRA_UNREAD_NUMBER, 0);
 
             if (componentName == null) return;
-            mUnreadMap.put(componentName, unreadNum);
-            synchronized (mUnreadChangedMap) {
-                mUnreadChangedMap.put(componentName, new UnreadInfo(componentName, unreadNum));
-            }
-            sWorker.removeCallbacks(mUnreadUpdateTask);
-            sWorker.post(mUnreadUpdateTask);
+            postUnreadTask(componentName, unreadNum);
         }
+    }
+
+    public void postUnreadTask(ComponentName componentName, int unreadNum) {
+        mUnreadMap.put(componentName, unreadNum);
+        synchronized (mUnreadChangedMap) {
+            mUnreadChangedMap.put(componentName, new UnreadInfo(componentName, unreadNum));
+        }
+        sWorker.removeCallbacks(mUnreadUpdateTask);
+        sWorker.post(mUnreadUpdateTask);
     }
 
     void forceReload() {
