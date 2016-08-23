@@ -16,11 +16,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.email.activity;
+package com.android.launcher3;
 
 import android.Manifest.permission;
 import android.app.Activity;
-import com.android.email.R;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * Activity that requests permissions needed for activities exported from Contacts.
@@ -28,11 +28,7 @@ import com.android.email.R;
 public class RequestPermissionsActivity extends RequestPermissionsActivityBase {
 
     private static final String[] REQUIRED_PERMISSIONS = new String[]{
-            permission.READ_CONTACTS, // Contacts group
-            permission.READ_EXTERNAL_STORAGE,
-            permission.READ_CALENDAR, // Calendar group
-            permission.GET_ACCOUNTS,
-            permission.READ_PHONE_STATE
+            permission.READ_EXTERNAL_STORAGE
     };
 
     @Override
@@ -43,11 +39,7 @@ public class RequestPermissionsActivity extends RequestPermissionsActivityBase {
     @Override
     protected String[] getDesiredPermissions() {
         return new String[]{
-                permission.READ_CONTACTS, // Contacts group
-                permission.READ_EXTERNAL_STORAGE,
-                permission.READ_CALENDAR, // Calendar group
-                permission.GET_ACCOUNTS,
-                permission.READ_PHONE_STATE
+                permission.READ_EXTERNAL_STORAGE
        };
     }
 

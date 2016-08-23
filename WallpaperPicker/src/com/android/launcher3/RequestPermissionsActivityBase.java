@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.email.activity;
+package com.android.launcher3;
 
 
 import android.app.Activity;
@@ -27,9 +27,9 @@ import android.os.Bundle;
 import android.os.Trace;
 import android.widget.Toast;
 
-import com.android.email.R;
 import java.util.ArrayList;
 import java.util.Arrays;
+import org.codeaurora.snaplauncher.R;
 
 /**
  * Activity that asks the user for all {@link #getDesiredPermissions} if any of
