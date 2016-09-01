@@ -25,6 +25,7 @@ import android.view.ViewGroup;
 import com.android.launcher3.util.FocusLogic;
 import com.android.launcher3.util.Thunk;
 import org.codeaurora.snaplauncher.R;
+
 /**
  * A keyboard listener we set on all the workspace icons.
  */
@@ -307,21 +308,19 @@ public class FocusHelper {
         int countX = iconLayout.getCountX();
         int countY = iconLayout.getCountY();
 
-        CellLayout hotseatLayout = (CellLayout) hotseat.getChildAt(0);
-        ShortcutAndWidgetContainer hotseatParent = hotseatLayout.getShortcutsAndWidgets();
         int[][] matrix;
 
         // KEYCODE_DPAD_DOWN in portrait (KEYCODE_DPAD_RIGHT in landscape) is the only key allowed
         // to take a user to the hotseat. For other dpad navigation, do not use the matrix extended
         // with the hotseat.
         if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN && !profile.isVerticalBarLayout()) {
-            matrix = FocusLogic.createSparseMatrix(iconLayout, hotseatLayout, true /* horizontal */,
+            matrix = FocusLogic.createSparseMatrix(iconLayout, hotseat, true /* horizontal */,
                     profile.inv.hotseatAllAppsRank,
                     !hotseat.hasIcons() /* ignore all apps icon, unless there are no other icons */);
             countY = countY + 1;
         } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT &&
                 profile.isVerticalBarLayout()) {
-            matrix = FocusLogic.createSparseMatrix(iconLayout, hotseatLayout, false /* horizontal */,
+            matrix = FocusLogic.createSparseMatrix(iconLayout, hotseat, false /* horizontal */,
                     profile.inv.hotseatAllAppsRank,
                     !hotseat.hasIcons() /* ignore all apps icon, unless there are no other icons */);
             countX = countX + 1;
@@ -407,8 +406,8 @@ public class FocusHelper {
                 if (0 <= newIconIndex && newIconIndex < parent.getChildCount()) {
                     newIcon = parent.getChildAt(newIconIndex);
                 } else if (parent.getChildCount() <= newIconIndex &&
-                        newIconIndex < parent.getChildCount() + hotseatParent.getChildCount()) {
-                    newIcon = hotseatParent.getChildAt(newIconIndex - parent.getChildCount());
+                        newIconIndex < parent.getChildCount() + hotseat.getChildCount()) {
+                    newIcon = hotseat.getChildAt(newIconIndex - parent.getChildCount());
                 }
                 break;
         }
