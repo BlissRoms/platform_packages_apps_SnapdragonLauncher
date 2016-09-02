@@ -159,6 +159,14 @@
             android:process=":settings_process">
         </activity>
 
+        <activity
+            android:name="com.android.launcher3.RequestPermissionsActivity" >
+        </activity>
+
+        <activity
+            android:name="com.android.launcher3.RequestPermissionsActivityBase" >
+        </activity>
+
         <!-- Debugging tools -->
         <activity
             android:name="com.android.launcher3.MemoryDumpActivity"
@@ -203,11 +211,7 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name="com.android.launcher3.StartupReceiver" >
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+        <receiver android:name="com.android.launcher3.StartupReceiver" />
 
         <!-- The settings provider contains Home's data, like the workspace favorites -->
         <provider

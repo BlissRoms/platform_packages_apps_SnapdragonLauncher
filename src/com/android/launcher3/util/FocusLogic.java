@@ -23,6 +23,7 @@ import android.view.ViewGroup;
 
 import com.android.launcher3.CellLayout;
 import com.android.launcher3.DeviceProfile;
+import com.android.launcher3.Hotseat;
 import com.android.launcher3.Launcher;
 import com.android.launcher3.LauncherAppState;
 import com.android.launcher3.ShortcutAndWidgetContainer;
@@ -184,18 +185,18 @@ public class FocusLogic {
      * in portrait orientation. In landscape, [(icon + hotseat) column count x (icon row count)]
      */
     // TODO: get rid of the dynamic matrix creation
-    public static int[][] createSparseMatrix(CellLayout iconLayout, CellLayout hotseatLayout,
+    public static int[][] createSparseMatrix(CellLayout iconLayout, ViewGroup viewGroup,
             boolean isHorizontal, int allappsiconRank, boolean includeAllappsicon) {
 
         ViewGroup iconParent = iconLayout.getShortcutsAndWidgets();
-        ViewGroup hotseatParent = hotseatLayout.getShortcutsAndWidgets();
+        Hotseat hotseat = (Hotseat) viewGroup;
 
         int m, n;
         if (isHorizontal) {
             m = iconLayout.getCountX();
-            n = iconLayout.getCountY() + hotseatLayout.getCountY();
+            n = iconLayout.getCountY() + hotseat.getChildCount();
         } else {
-            m = iconLayout.getCountX() + hotseatLayout.getCountX();
+            m = iconLayout.getCountX() + hotseat.getChildCount();
             n = iconLayout.getCountY();
         }
         int[][] matrix = createFullMatrix(m, n);
@@ -211,19 +212,17 @@ public class FocusLogic {
         // The hotseat view group contains one more item than iconLayout column count.
         // If {@param allappsiconRank} not negative, then the last icon in the hotseat
         // is truncated. If it is negative, then all apps icon index is not inserted.
-        for(int i = hotseatParent.getChildCount() - 1; i >= (includeAllappsicon ? 0 : 1); i--) {
+        for(int i = hotseat.getChildCount() - 1; i >= (includeAllappsicon ? 0 : 1); i--) {
             int delta = 0;
             if (isHorizontal) {
-                int cx = ((CellLayout.LayoutParams)
-                        hotseatParent.getChildAt(i).getLayoutParams()).cellX;
+                int cx = hotseat.getCellXByPos(i);
                 if ((includeAllappsicon && cx >= allappsiconRank) ||
                         (!includeAllappsicon && cx > allappsiconRank)) {
                         delta = -1;
                 }
                 matrix[cx + delta][iconLayout.getCountY()] = iconParent.getChildCount() + i;
             } else {
-                int cy = ((CellLayout.LayoutParams)
-                        hotseatParent.getChildAt(i).getLayoutParams()).cellY;
+                int cy = hotseat.getCellXByPos(i);
                 if ((includeAllappsicon && cy >= allappsiconRank) ||
                         (!includeAllappsicon && cy > allappsiconRank)) {
                         delta = -1;

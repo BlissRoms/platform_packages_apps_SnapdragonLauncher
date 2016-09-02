@@ -384,7 +384,6 @@ public class Launcher extends Activity
     protected static HashMap<String, CustomAppWidget> sCustomAppWidgets =
             new HashMap<String, CustomAppWidget>();
 
-    private Map mUnreadAppMap = new HashMap<ComponentName, Integer>();
     private static final boolean ENABLE_CUSTOM_WIDGET_TEST = false;
     static {
         if (ENABLE_CUSTOM_WIDGET_TEST) {
@@ -429,15 +428,17 @@ public class Launcher extends Activity
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             IGetUnreadNumber iGetUnreadNumber = IGetUnreadNumber.Stub.asInterface(service);
+            Map unreadAppMap = new HashMap<ComponentName, Integer>();
 
             try {
                 if(iGetUnreadNumber != null){
-                    mUnreadAppMap = iGetUnreadNumber.GetUnreadNumber();
+                    unreadAppMap = iGetUnreadNumber.GetUnreadNumber();
                 }
             } catch (RemoteException ex) {
             }
 
-            mIconCache.setUnreadMap(mUnreadAppMap);
+            mModel.setUnreadMap(unreadAppMap);
+            updateUnreadIcon(unreadAppMap);
             unbindService(mConnection);
         }
         @Override
@@ -445,16 +446,14 @@ public class Launcher extends Activity
         }
     };
 
-    public Map getUnreadMap() {
-        return mUnreadAppMap;
-    }
-
-    public int getUnreadNumberOfComponent(ComponentName componentName) {
-        int unreadNum = -1;
-        if(mUnreadAppMap.containsKey(componentName)){
-            unreadNum = (int) mUnreadAppMap.get(componentName);
+    private void updateUnreadIcon(Map unreadMap) {
+        Iterator iter = unreadMap.entrySet().iterator();
+        while (iter.hasNext()) {
+            Map.Entry entry = (Map.Entry) iter.next();
+            ComponentName componentName = (ComponentName) entry.getKey();
+            int unreadNumber = (int) entry.getValue();
+            mModel.postUnreadTask(componentName, unreadNumber);
         }
-        return unreadNum;
     }
 
     private Runnable mUpdateOrientationRunnable = new Runnable() {
@@ -592,12 +591,6 @@ public class Launcher extends Activity
         intent.setComponent(componentName);
         final Intent eintent = new Intent(Utilities.createExplicitFromImplicitIntent(this, intent));
         bindService(eintent, mConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    public void bindUnreadMapUpdate(ComponentName componentName, int unreadNum) {
-        if (mUnreadAppMap.containsKey(componentName)) {
-            mUnreadAppMap.put(componentName, unreadNum);
-        }
     }
 
     @Override

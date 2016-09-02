@@ -35,11 +35,11 @@ import com.android.launcher3.util.Thunk;
 
 import java.util.ArrayList;
 import org.codeaurora.snaplauncher.R;
+
 public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     OnLongClickListener, DragListener {
 
     private static final int MAX_HOTSEAT = 5;
-    private CellLayout mContent;
     private  Hotseat mContentHotSeat;
     private static final int HOTSEAT_SCREEN = -1;
 
@@ -398,12 +398,12 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
      * Returns whether there are other icons than the all apps button in the hotseat.
      */
     public boolean hasIcons() {
-        return mContent.getShortcutsAndWidgets().getChildCount() > 1;
+        return mContentHotSeat.getChildCount() > 0;
     }
 
     /* Get the orientation invariant order of the item in the hotseat for persistence. */
     public int getOrderInHotseat(int x, int y) {
-        return mHasVerticalHotseat ? (mContent.getCountY() - y - 1) : x;
+        return mHasVerticalHotseat ? (mContentHotSeat.getChildCount() - y - 1) : x;
     }
 
     /* Get the orientation specific coordinates given an invariant order in the hotseat. */
@@ -412,7 +412,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     }
 
     int getCellYFromOrder(int rank) {
-        return mHasVerticalHotseat ? (mContent.getCountY() - (rank + 1)) : 0;
+        return mHasVerticalHotseat ? (mContentHotSeat.getChildCount() - (rank + 1)) : 0;
     }
 
     public boolean isAllAppsButtonRank(int rank) {
@@ -807,7 +807,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         return result;
     }
 
-    private int getCellXByPos(int pos) {
+    public int getCellXByPos(int pos) {
         int result = 0;
         int i = 0;
         for (; i < MAX_HOTSEAT; i++) {

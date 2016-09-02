@@ -77,8 +77,6 @@ public class IconCache {
 
     @Thunk static final Object ICON_UPDATE_TOKEN = new Object();
 
-    private Map mUnreadMap;
-
     private boolean mAppIconReloaded = false;
 
     @Thunk static class CacheEntry {
@@ -510,15 +508,13 @@ public class IconCache {
         shortcutInfo.usingLowResIcon = entry.isLowResIcon;
     }
 
-    public void setUnreadMap(Map unreadAppMap) {
-        mUnreadMap = unreadAppMap;
-    }
-
     private int getUnreadNumber(ComponentName componentName){
         int unreadNumber = -1;
         if(mAppIconReloaded){
-            if(mUnreadMap.containsKey(componentName)) {
-                unreadNumber = (int) mUnreadMap.get(componentName);
+            if(LauncherAppState.getInstance().getModel().getUnreadMap()
+                    .containsKey(componentName)) {
+                unreadNumber = (int) LauncherAppState.getInstance().getModel()
+                        .getUnreadMap().get(componentName);
             }
         }
         return unreadNumber;
