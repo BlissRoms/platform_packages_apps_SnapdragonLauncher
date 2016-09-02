@@ -103,4 +103,6 @@
     <string name="permission_call_phone">打电话</string>
     <string name="permission_access_external_storage">接入外部存储</string>
     <string name="snaplauncher_app_name">骁龙桌面</string>
+
+    <string name="missing_required_permission">您已禁用了一个所需的权限</string>
 </resources>
