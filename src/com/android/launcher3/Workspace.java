@@ -4176,6 +4176,11 @@ public class Workspace extends PagedView
                 infos.add((ItemInfo) view.getTag());
             }
         }
+        int hotseatCnt = mLauncher.getHotseat().getChildCount();
+        for (int j = 0; j < hotseatCnt; ++j) {
+            View view = mLauncher.getHotseat().getChildAt(j);
+            infos.add((ItemInfo) view.getTag());
+        }
         LauncherModel.ItemInfoFilter filter = new LauncherModel.ItemInfoFilter() {
             @Override
             public boolean filterItem(ItemInfo parent, ItemInfo info,
@@ -4211,44 +4216,8 @@ public class Workspace extends PagedView
                 children.put((ItemInfo) view.getTag(), view);
             }
 
-            final ArrayList<View> childrenToRemove = new ArrayList<View>();
-            final HashMap<FolderInfo, ArrayList<ShortcutInfo>> folderAppsToRemove =
-                    new HashMap<FolderInfo, ArrayList<ShortcutInfo>>();
-            LauncherModel.ItemInfoFilter filter = new LauncherModel.ItemInfoFilter() {
-                @Override
-                public boolean filterItem(ItemInfo parent, ItemInfo info,
-                                          ComponentName cn) {
-                    if (parent instanceof FolderInfo) {
-                        if (componentNames.contains(cn) && info.user.equals(user)) {
-                            FolderInfo folder = (FolderInfo) parent;
-                            ArrayList<ShortcutInfo> appsToRemove;
-                            if (folderAppsToRemove.containsKey(folder)) {
-                                appsToRemove = folderAppsToRemove.get(folder);
-                            } else {
-                                appsToRemove = new ArrayList<ShortcutInfo>();
-                                folderAppsToRemove.put(folder, appsToRemove);
-                            }
-                            appsToRemove.add((ShortcutInfo) info);
-                            return true;
-                        }
-                    } else {
-                        if (componentNames.contains(cn) && info.user.equals(user)) {
-                            childrenToRemove.add(children.get(info));
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-            };
-            LauncherModel.filterItemInfos(children.keySet(), filter);
-
-            // Remove all the apps from their folders
-            for (FolderInfo folder : folderAppsToRemove.keySet()) {
-                ArrayList<ShortcutInfo> appsToRemove = folderAppsToRemove.get(folder);
-                for (ShortcutInfo info : appsToRemove) {
-                    folder.remove(info);
-                }
-            }
+            ArrayList<View> childrenToRemove = new ArrayList<View>();
+            childrenToRemove = getRemoveItems(componentNames, user, children);
 
             // Remove all the other children
             for (View child : childrenToRemove) {
@@ -4266,8 +4235,72 @@ public class Workspace extends PagedView
             }
         }
 
+        int hotseatCnt = mLauncher.getHotseat().getChildCount();
+        final HashMap<ItemInfo, View> hotseatChildren = new HashMap<ItemInfo, View>();
+        for (int k = 0; k < hotseatCnt; k++) {
+            final View view = mLauncher.getHotseat().getChildAt(k);
+            hotseatChildren.put((ItemInfo) view.getTag(), view);
+        }
+
+        ArrayList<View> hotseatItemToRemove = new ArrayList<View>();
+        hotseatItemToRemove = getRemoveItems(componentNames, user, hotseatChildren);
+
+        for (View child : hotseatItemToRemove) {
+            child.setVisibility(View.GONE);
+            child.setTag(null);
+        }
+
+        if (hotseatItemToRemove.size() > 0) {
+            mLauncher.getHotseat().requestLayout();
+            mLauncher.getHotseat().invalidate();
+        }
+
         // Strip all the empty screens
     }
+
+    private ArrayList<View> getRemoveItems(final HashSet<ComponentName> componentNames
+            ,final UserHandleCompat user,final HashMap<ItemInfo, View> children){
+        final ArrayList<View> childrenToRemove = new ArrayList<View>();
+        final HashMap<FolderInfo, ArrayList<ShortcutInfo>> folderAppsToRemove =
+                new HashMap<FolderInfo, ArrayList<ShortcutInfo>>();
+        LauncherModel.ItemInfoFilter filter = new LauncherModel.ItemInfoFilter() {
+            @Override
+            public boolean filterItem(ItemInfo parent, ItemInfo info,
+                                      ComponentName cn) {
+                if (parent instanceof FolderInfo) {
+                    if (componentNames.contains(cn) && info.user.equals(user)) {
+                        FolderInfo folder = (FolderInfo) parent;
+                        ArrayList<ShortcutInfo> appsToRemove;
+                        if (folderAppsToRemove.containsKey(folder)) {
+                            appsToRemove = folderAppsToRemove.get(folder);
+                        } else {
+                            appsToRemove = new ArrayList<ShortcutInfo>();
+                            folderAppsToRemove.put(folder, appsToRemove);
+                        }
+                        appsToRemove.add((ShortcutInfo) info);
+                        return true;
+                    }
+                } else {
+                    if (componentNames.contains(cn) && info.user.equals(user)) {
+                        childrenToRemove.add(children.get(info));
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+        LauncherModel.filterItemInfos(children.keySet(), filter);
+
+        // Remove all the apps from their folders
+        for (FolderInfo folder : folderAppsToRemove.keySet()) {
+            ArrayList<ShortcutInfo> appsToRemove = folderAppsToRemove.get(folder);
+            for (ShortcutInfo info : appsToRemove) {
+                folder.remove(info);
+            }
+        }
+        return childrenToRemove;
+    }
+
 
     interface ItemOperator {
         /**
