@@ -105,4 +105,8 @@
     <string name="snaplauncher_app_name">骁龙桌面</string>
 
     <string name="missing_required_permission">您已禁用了一个所需的权限</string>
+
+    <string name="batch_tips_target_label_initial">点击图标开始批量整理</string>
+    <string name="batch_tips_target_drag_start_label">松手可放置应用</string>
+    <string name="batch_tips_target_drag_label_selected">个已选，可长按拖动</string>
 </resources>

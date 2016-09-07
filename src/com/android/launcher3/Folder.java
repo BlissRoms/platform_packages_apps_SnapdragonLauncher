@@ -60,6 +60,8 @@ import com.android.launcher3.accessibility.LauncherAccessibilityDelegate.Accessi
 import com.android.launcher3.util.Thunk;
 import com.android.launcher3.util.UiThreadCircularReveal;
 
+import org.codeaurora.snaplauncher.BatchArrangeDragView;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -251,6 +253,13 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     public boolean onLongClick(View v) {
         // Return if global dragging is not enabled
         if (!mLauncher.isDraggingEnabled()) return true;
+        if (mDragController.isDragging()){
+            mLauncher.changeWorkModeToArrange(v);
+            return true;
+        }
+        if (!mLauncher.supportDrag(v)){
+            return true;
+        }
         return beginDrag(v, false);
     }
 
@@ -354,6 +363,10 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
 
     public void setFolderIcon(FolderIcon icon) {
         mFolderIcon = icon;
+    }
+
+    public FolderIcon getFolderIcon(){
+        return mFolderIcon;
     }
 
     @Override
@@ -686,6 +699,10 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
 
     @Override
     public void onDragOver(DragObject d) {
+        if (d.snapDragViews != null && d.snapDragViews.size() >0 ){
+            completeDragExit();
+            return;
+        }
         onDragOver(d, REORDER_DELAY);
     }
 
@@ -833,6 +850,12 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
                     ? mCurrentDragView : mContent.createNewView(info);
             ArrayList<View> views = getItemsInReadingOrder();
             views.add(info.rank, icon);
+            for (BatchArrangeDragView dragView: d.snapDragViews){
+                if (dragView.getType() == BatchArrangeDragView.BubbleTextViewType.FOLDER){
+                    ShortcutInfo si = (ShortcutInfo) dragView.getView().getTag();
+                    views.add(si.rank, dragView.getView());
+                }
+            }
             mContent.arrangeChildren(views, views.size());
             mItemsInvalidated = true;
 
@@ -1278,11 +1301,23 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     // to correspond to the animation of the icon back into the folder. This is
     public void hideItem(ShortcutInfo info) {
         View v = getViewForInfo(info);
-        v.setVisibility(INVISIBLE);
+        if (v != null){
+            v.setVisibility(INVISIBLE);
+        }
     }
     public void showItem(ShortcutInfo info) {
         View v = getViewForInfo(info);
-        v.setVisibility(VISIBLE);
+        if (v != null) {
+            v.setVisibility(VISIBLE);
+            updateBatchAppsState(info, v);
+        }
+    }
+
+    private void updateBatchAppsState(ShortcutInfo info, View v){
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE
+                && mLauncher.getBatchArrangeAppsAll().containsKey(info.getTargetComponent())){
+            mLauncher.updateBatchArrangeApps(v);
+        }
     }
 
     @Override

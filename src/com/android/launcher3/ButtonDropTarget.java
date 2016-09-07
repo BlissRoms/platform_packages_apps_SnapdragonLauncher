@@ -210,6 +210,10 @@ public abstract class ButtonDropTarget extends TextView
 
     protected abstract boolean supportsDrop(DragSource source, Object info);
 
+    boolean isInBatchArrangeMode(){
+        return mLauncher.getWorkspace().getState() != Workspace.State.ARRANGE;
+    }
+
     @Override
     public boolean isDropEnabled() {
         return mActive;
