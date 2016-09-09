@@ -28,6 +28,10 @@ public class CheckLongPressHelper {
     private int mLongPressTimeout = 300;
     private CheckForLongPress mPendingCheckForLongPress;
 
+    @Thunk boolean mHasPerformedLongPressToArrange;
+    private int mLongPressToArrangeTimeout = 1000;
+    private CheckForLongPressToArrange mPendingCheckForLongPressToArrange;
+
     class CheckForLongPress implements Runnable {
         public void run() {
             if ((mView.getParent() != null) && mView.hasWindowFocus()
@@ -41,6 +45,21 @@ public class CheckLongPressHelper {
                 if (handled) {
                     mView.setPressed(false);
                     mHasPerformedLongPress = true;
+                }
+            }
+        }
+    }
+
+    class CheckForLongPressToArrange implements Runnable {
+        public void run() {
+            if ((mView.getParent() != null) && mView.hasWindowFocus()
+                    && !mHasPerformedLongPressToArrange) {
+
+                boolean handled = mView.performLongClick();
+
+                if (handled) {
+                    mView.setPressed(false);
+                    mHasPerformedLongPressToArrange = true;
                 }
             }
         }
@@ -81,5 +100,26 @@ public class CheckLongPressHelper {
 
     public boolean hasPerformedLongPress() {
         return mHasPerformedLongPress;
+    }
+
+    public void postCheckForLongPressToArrange() {
+        mHasPerformedLongPressToArrange = false;
+
+        if (mPendingCheckForLongPressToArrange == null) {
+            mPendingCheckForLongPressToArrange = new CheckForLongPressToArrange();
+        }
+        mView.postDelayed(mPendingCheckForLongPressToArrange, mLongPressToArrangeTimeout);
+    }
+
+    public void cancelLongPressToArrange() {
+        mHasPerformedLongPressToArrange = false;
+        if (mPendingCheckForLongPressToArrange != null) {
+            mView.removeCallbacks(mPendingCheckForLongPressToArrange);
+            mPendingCheckForLongPressToArrange = null;
+        }
+    }
+
+    public boolean hasPerformedLongPressToArrange() {
+        return mHasPerformedLongPressToArrange;
     }
 }

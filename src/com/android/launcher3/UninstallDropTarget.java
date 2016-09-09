@@ -34,7 +34,7 @@ public class UninstallDropTarget extends ButtonDropTarget {
 
     @Override
     protected boolean supportsDrop(DragSource source, Object info) {
-        return supportsDrop(getContext(), info);
+        return supportsDrop(getContext(), info) && isInBatchArrangeMode();
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)

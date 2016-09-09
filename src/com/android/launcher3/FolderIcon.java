@@ -52,6 +52,8 @@ import com.android.launcher3.DropTarget.DragObject;
 import com.android.launcher3.FolderInfo.FolderListener;
 import com.android.launcher3.util.Thunk;
 
+import org.codeaurora.snaplauncher.BatchArrangeDragView;
+
 import java.util.ArrayList;
 import org.codeaurora.snaplauncher.R;
 
@@ -425,7 +427,8 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         }
         mOpenAlarm.setOnAlarmListener(mOnOpenListener);
         if (SPRING_LOADING_ENABLED &&
-                ((dragInfo instanceof AppInfo) || (dragInfo instanceof ShortcutInfo))) {
+                ((dragInfo instanceof AppInfo) || (dragInfo instanceof ShortcutInfo))
+                && mLauncher.mWorkspace.getState() != Workspace.State.ARRANGE) {
             // TODO: we currently don't support spring-loading for PendingAddShortcutInfos even
             // though widget-style shortcuts can be added to folders. The issue is that we need
             // to deal with configuration activities which are currently handled in
@@ -456,7 +459,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
     };
 
     public void performCreateAnimation(final ShortcutInfo destInfo, final View destView,
-            final ShortcutInfo srcInfo, final DragView srcView, Rect dstRect,
+            final ShortcutInfo srcInfo, final DragObject d, Rect dstRect,
             float scaleRelativeToDragLayer, Runnable postAnimationRunnable) {
 
         // These correspond two the drawable and view that the icon was dropped _onto_
@@ -470,7 +473,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         addItem(destInfo);
 
         // This will animate the dragView (srcView) into the new folder
-        onDrop(srcInfo, srcView, dstRect, scaleRelativeToDragLayer, 1, postAnimationRunnable, null);
+        onDrop(srcInfo, d.dragView, dstRect, scaleRelativeToDragLayer, 1, postAnimationRunnable, d);
     }
 
     public void performDestroyAnimation(final View finalView, Runnable onCompleteRunnable,
@@ -500,9 +503,10 @@ public class FolderIcon extends FrameLayout implements FolderListener {
 
     private void onDrop(final ShortcutInfo item, DragView animateView, Rect finalRect,
             float scaleRelativeToDragLayer, int index, Runnable postAnimationRunnable,
-            DragObject d) {
+            final DragObject d) {
         item.cellX = -1;
         item.cellY = -1;
+        resetSnapViewCells(d);
 
         // Typically, the animateView corresponds to the DragView; however, if this is being done
         // after a configuration activity (ie. for a Shortcut being dragged from AllApps) we
@@ -543,19 +547,54 @@ public class FolderIcon extends FrameLayout implements FolderListener {
                     1, 1, finalScale, finalScale, DROP_IN_ANIMATION_DURATION,
                     new DecelerateInterpolator(2), new AccelerateInterpolator(2),
                     postAnimationRunnable, DragLayer.ANIMATION_END_DISAPPEAR, null);
-            addItem(item);
-            mHiddenItems.add(item);
-            mFolder.hideItem(item);
+            hideItem(item);
+            hideSnapViews(d);
             postDelayed(new Runnable() {
                 public void run() {
-                    mHiddenItems.remove(item);
-                    mFolder.showItem(item);
+                    showItem(item);
+                    showSnapViews(d);
                     invalidate();
                 }
             }, DROP_IN_ANIMATION_DURATION);
         } else {
             addItem(item);
+            addSnapViews(d);
         }
+    }
+
+    private void resetSnapViewCells(DragObject d){
+        for (BatchArrangeDragView dragView: d.snapDragViews){
+            BatchArrangeDragView.resetCellXY(dragView.getShortcutInfo());
+        }
+    }
+
+    public void addSnapViews(DragObject d){
+        for (BatchArrangeDragView dragView: d.snapDragViews){
+            addItem(dragView.getShortcutInfo());
+        }
+    }
+
+    private void hideSnapViews(DragObject d){
+        for (BatchArrangeDragView dragView: d.snapDragViews){
+            hideItem(dragView.getShortcutInfo());
+        }
+    }
+
+    private void showSnapViews(DragObject d){
+        for (BatchArrangeDragView dragView: d.snapDragViews){
+            showItem(dragView.getShortcutInfo());
+        }
+    }
+
+    private void hideItem(ShortcutInfo item){
+        addItem(item);
+        mHiddenItems.add(item);
+        mFolder.hideItem(item);
+    }
+
+    private void showItem(ShortcutInfo item){
+        mHiddenItems.remove(item);
+        mFolder.showItem(item);
     }
 
     public void onDrop(DragObject d) {

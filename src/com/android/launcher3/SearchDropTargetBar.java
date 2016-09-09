@@ -18,15 +18,23 @@ package com.android.launcher3;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
+import android.content.ComponentName;
 import android.content.Context;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.accessibility.AccessibilityManager;
 import android.view.animation.AccelerateInterpolator;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.FrameLayout;
 
 import com.android.launcher3.util.Thunk;
+
+import org.codeaurora.snaplauncher.BatchTipsView;
+
+import java.util.List;
+import java.util.Map;
 import org.codeaurora.snaplauncher.R;
 
 /*
@@ -37,16 +45,21 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
 
     /** The different states that the search bar space can be in. */
     public enum State {
-        INVISIBLE   (0f, 0f),
-        SEARCH_BAR  (1f, 0f),
-        DROP_TARGET (0f, 1f);
+        INVISIBLE   (0f, 0f, 0f, 0f),
+        SEARCH_BAR  (1f, 0f, 0f, 0f),
+        DROP_TARGET (0f, 1f, 0f, 0f),
+        BATCH_TIPS  (0f, 0f, 1f, 0.5f);
 
         private final float mSearchBarAlpha;
         private final float mDropTargetBarAlpha;
+        private final float mBatchTipsBarAlpha;
+        private final float mDragLayerAlpha;
 
-        State(float sbAlpha, float dtbAlpha) {
+        State(float sbAlpha, float dtbAlpha, float btbAlpha, float dlAlpha) {
             mSearchBarAlpha = sbAlpha;
             mDropTargetBarAlpha = dtbAlpha;
+            mBatchTipsBarAlpha = btbAlpha;
+            mDragLayerAlpha = dlAlpha;
         }
 
         float getSearchBarAlpha() {
@@ -56,12 +69,21 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
         float getDropTargetBarAlpha() {
             return mDropTargetBarAlpha;
         }
+
+        float getBatchTipsBarAlpha() {
+            return mBatchTipsBarAlpha;
+        }
+
+        float getDragLayerAlpha() {
+            return mDragLayerAlpha;
+        }
     }
 
     private static int DEFAULT_DRAG_FADE_DURATION = 175;
 
     private LauncherViewPropertyAnimator mDropTargetBarAnimator;
     private LauncherViewPropertyAnimator mQSBSearchBarAnimator;
+    private LauncherViewPropertyAnimator mBatchTipsBarAnimator;
     private static final AccelerateInterpolator sAccelerateInterpolator =
             new AccelerateInterpolator();
 
@@ -75,6 +97,10 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
     private ButtonDropTarget mInfoDropTarget;
     private ButtonDropTarget mDeleteDropTarget;
     private ButtonDropTarget mUninstallDropTarget;
+
+    //Batch tips
+    private BatchTipsView mBatchTipsBar;
+    private DragLayer mDragLayer;
 
     public SearchDropTargetBar(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
@@ -91,6 +117,7 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
         dragController.addDragListener(mInfoDropTarget);
         dragController.addDragListener(mDeleteDropTarget);
         dragController.addDragListener(mUninstallDropTarget);
+        dragController.addDragListener(mBatchTipsBar);
 
         dragController.addDropTarget(mInfoDropTarget);
         dragController.addDropTarget(mDeleteDropTarget);
@@ -99,6 +126,8 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
         mInfoDropTarget.setLauncher(launcher);
         mDeleteDropTarget.setLauncher(launcher);
         mUninstallDropTarget.setLauncher(launcher);
+
+        mDragLayer = launcher.getDragLayer();
     }
 
     @Override
@@ -114,6 +143,27 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
         mInfoDropTarget.setSearchDropTargetBar(this);
         mDeleteDropTarget.setSearchDropTargetBar(this);
         mUninstallDropTarget.setSearchDropTargetBar(this);
+
+        mBatchTipsBar = (BatchTipsView) findViewById(R.id.batch_tips_bar);
+
+        // Create the various fade animations
+        mBatchTipsBar.setAlpha(0f);
+        mBatchTipsBarAnimator = new LauncherViewPropertyAnimator(mBatchTipsBar);
+        mBatchTipsBarAnimator.setInterpolator(sAccelerateInterpolator);
+        mBatchTipsBarAnimator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationStart(Animator animation) {
+                // Ensure that the view is visible for the animation
+                mBatchTipsBar.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                if (mBatchTipsBar != null) {
+                    AlphaUpdateListener.updateVisibility(mBatchTipsBar, mAccessibilityEnabled);
+                }
+            }
+        });
 
         // Create the various fade animations
         mDropTargetBar.setAlpha(0f);
@@ -179,6 +229,9 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
                     duration);
             animateViewAlpha(mDropTargetBarAnimator, mDropTargetBar, newState.getDropTargetBarAlpha(),
                     duration);
+            animateViewAlpha(mBatchTipsBarAnimator, mBatchTipsBar, newState.getBatchTipsBarAlpha(),
+                    duration);
+            animateDragLayerAlpha(newState.getDragLayerAlpha());
         }
     }
 
@@ -207,7 +260,10 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
      */
     @Override
     public void onDragStart(DragSource source, Object info, int dragAction) {
-        animateToState(State.DROP_TARGET, DEFAULT_DRAG_FADE_DURATION);
+        Launcher launcher = (Launcher)getContext();
+        if (launcher.getWorkspace().getState() != Workspace.State.ARRANGE ){
+            animateToState(State.DROP_TARGET, DEFAULT_DRAG_FADE_DURATION);
+        }
     }
 
     /**
@@ -221,7 +277,10 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
     @Override
     public void onDragEnd() {
         if (!mDeferOnDragEnd) {
-            animateToState(State.SEARCH_BAR, DEFAULT_DRAG_FADE_DURATION);
+            Launcher launcher = (Launcher)getContext();
+            if (launcher.getWorkspace().getState() != Workspace.State.ARRANGE ){
+                animateToState(State.SEARCH_BAR, DEFAULT_DRAG_FADE_DURATION);
+            }
         } else {
             mDeferOnDragEnd = false;
         }
@@ -253,5 +312,31 @@ public class SearchDropTargetBar extends FrameLayout implements DragController.D
         mInfoDropTarget.enableAccessibleDrag(enable);
         mDeleteDropTarget.enableAccessibleDrag(enable);
         mUninstallDropTarget.enableAccessibleDrag(enable);
+    }
+
+    public void updateBatchArrangeTips(Map<ComponentName, View> views){
+        mBatchTipsBar.updateText(views.size());
+    }
+
+    public void resetBatchArrangeTips(){
+        mBatchTipsBar.reset();
+    }
+
+    private void animateDragLayerAlpha(float finalAlpha){
+        if (mDragLayer != null) {
+            float startAlpha = mDragLayer.getBackgroundAlpha();
+            ValueAnimator bgFadeOutAnimation =
+                    LauncherAnimUtils.ofFloat(null, startAlpha, finalAlpha);
+            bgFadeOutAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    mDragLayer.setBackgroundAlpha(
+                            ((Float) animation.getAnimatedValue()).floatValue());
+                }
+            });
+            bgFadeOutAnimation.setInterpolator(new DecelerateInterpolator(1.5f));
+            bgFadeOutAnimation.setDuration(DEFAULT_DRAG_FADE_DURATION);
+            bgFadeOutAnimation.start();
+        }
     }
 }
