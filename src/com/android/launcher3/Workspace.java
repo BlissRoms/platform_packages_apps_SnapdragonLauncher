@@ -1021,7 +1021,6 @@ public class Workspace extends PagedView
             ((FolderIcon) child).setTextVisible(true);
         }
         layout = getScreenWithId(screenId);
-        child.setOnKeyListener(new IconKeyEventListener());
 
         ViewGroup.LayoutParams genericLp = child.getLayoutParams();
         CellLayout.LayoutParams lp;
