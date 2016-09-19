@@ -3459,7 +3459,7 @@ public class Launcher extends Activity
             mArrangeShortcuts.remove(info.getTargetComponent());
             ((BubbleTextView)itemUnderLongClick).startSelectOrCancelAnimation(false);
         }else {
-            if (mArrangeShortcuts.size() >= 5)return ;
+            if (mArrangeShortcuts.size() >= 5 || info.getTargetComponent() == null) return;
             mArrangeShortcuts.put(info.getTargetComponent(), itemUnderLongClick);
             ((BubbleTextView)itemUnderLongClick).startSelectOrCancelAnimation(true);
         }
