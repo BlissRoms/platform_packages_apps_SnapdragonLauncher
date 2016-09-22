@@ -681,4 +681,8 @@ public class FolderPagedView extends PagedView {
         pos[0] = 0;
         pos[1] = getViewportHeight();
     }
+
+    public Folder getFolder(){
+        return mFolder;
+    }
 }

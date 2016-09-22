@@ -18,6 +18,7 @@ package com.android.launcher3;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
 import android.animation.TimeInterpolator;
 import android.animation.ValueAnimator;
 import android.animation.ValueAnimator.AnimatorUpdateListener;
@@ -42,8 +43,10 @@ import android.widget.TextView;
 import com.android.launcher3.accessibility.LauncherAccessibilityDelegate;
 import com.android.launcher3.util.Thunk;
 
-import java.util.ArrayList;
+import org.codeaurora.snaplauncher.BatchArrangeDragView;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import org.codeaurora.snaplauncher.R;
 /**
  * A ViewGroup that coordinates dragging across its descendants
@@ -69,6 +72,8 @@ public class DragLayer extends InsettableFrameLayout {
     private AppWidgetResizeFrame mCurrentResizeFrame;
 
     // Variables relating to animation of views after drop
+    private AnimatorSet mAnimatorSet = LauncherAnimUtils.createAnimatorSet();
+    private Collection<Animator> mAnimators = new ArrayList<Animator>();
     private ValueAnimator mDropAnim = null;
     private final TimeInterpolator mCubicEaseOutInterpolator = new DecelerateInterpolator(1.5f);
     @Thunk DragView mDropView = null;
@@ -624,6 +629,7 @@ public class DragLayer extends InsettableFrameLayout {
             if (dragView.getDragVisualizeOffset() != null) {
                 toY -=  Math.round(toScale * dragView.getDragVisualizeOffset().y);
             }
+            toY = toY - dragView.getLeftCornerRadius();
 
             toX -= (dragView.getMeasuredWidth() - Math.round(scale * child.getMeasuredWidth())) / 2;
         } else if (child instanceof FolderIcon) {
@@ -742,14 +748,14 @@ public class DragLayer extends InsettableFrameLayout {
                 int anchorAdjust = mAnchorView == null ? 0 : (int) (mAnchorView.getScaleX() *
                     (mAnchorViewInitialScrollX - mAnchorView.getScrollX()));
 
-                int xPos = x - mDropView.getScrollX() + anchorAdjust;
-                int yPos = y - mDropView.getScrollY();
+                int xPos = x - view.getScrollX() + anchorAdjust;
+                int yPos = y - view.getScrollY();
 
-                mDropView.setTranslationX(xPos);
-                mDropView.setTranslationY(yPos);
-                mDropView.setScaleX(scaleX);
-                mDropView.setScaleY(scaleY);
-                mDropView.setAlpha(alpha);
+                view.setTranslationX(xPos);
+                view.setTranslationY(yPos);
+                view.setScaleX(scaleX);
+                view.setScaleY(scaleY);
+                view.setAlpha(alpha);
             }
         };
         animateView(view, updateCb, duration, interpolator, onCompleteRunnable, animationEndStyle,
@@ -760,12 +766,17 @@ public class DragLayer extends InsettableFrameLayout {
             TimeInterpolator interpolator, final Runnable onCompleteRunnable,
             final int animationEndStyle, View anchorView) {
         // Clean up the previous animations
-        if (mDropAnim != null) mDropAnim.cancel();
+        if (mDropAnim != null && !(view instanceof BatchArrangeDragView)) mDropAnim.cancel();
 
         // Show the drop view if it was previously hidden
-        mDropView = view;
-        mDropView.cancelAnimation();
-        mDropView.resetLayoutParams();
+        if (view instanceof BatchArrangeDragView){
+            view.cancelAnimation();
+            view.resetLayoutParams();
+        }else {
+            mDropView = view;
+            mDropView.cancelAnimation();
+            mDropView.resetLayoutParams();
+        }
 
         // Set the anchor view if the page is scrolling
         if (anchorView != null) {
@@ -774,37 +785,58 @@ public class DragLayer extends InsettableFrameLayout {
         mAnchorView = anchorView;
 
         // Create and start the animation
-        mDropAnim = new ValueAnimator();
-        mDropAnim.setInterpolator(interpolator);
-        mDropAnim.setDuration(duration);
-        mDropAnim.setFloatValues(0f, 1f);
-        mDropAnim.addUpdateListener(updateCb);
-        mDropAnim.addListener(new AnimatorListenerAdapter() {
+        final ValueAnimator dropAnim = new ValueAnimator();
+        dropAnim.setInterpolator(interpolator);
+        dropAnim.setDuration(duration);
+        dropAnim.setFloatValues(0f, 1f);
+        dropAnim.addUpdateListener(updateCb);
+        dropAnim.addListener(new AnimatorListenerAdapter() {
             public void onAnimationEnd(Animator animation) {
                 if (onCompleteRunnable != null) {
                     onCompleteRunnable.run();
                 }
                 switch (animationEndStyle) {
                 case ANIMATION_END_DISAPPEAR:
-                    clearAnimatedView();
+                    clearAnimatedView(view, dropAnim);
                     break;
                 case ANIMATION_END_REMAIN_VISIBLE:
                     break;
                 }
             }
         });
-        mDropAnim.start();
+        if (view instanceof BatchArrangeDragView){
+            mAnimators.add(dropAnim);
+        }else {
+            mDropAnim =  dropAnim;
+            dropAnim.start();
+        }
     }
 
-    public void clearAnimatedView() {
-        if (mDropAnim != null) {
-            mDropAnim.cancel();
+    public void startPlayAnimations(){
+        mAnimatorSet.playTogether(mAnimators);
+        mAnimatorSet.start();
+    }
+
+    private void clearAnimatedView(DragView view,ValueAnimator dropAnim) {
+        if (dropAnim != null) {
+            dropAnim.cancel();
         }
-        if (mDropView != null) {
-            mDragController.onDeferredEndDrag(mDropView);
+        if (view != null) {
+            mDragController.onDeferredEndDrag(view);
         }
-        mDropView = null;
+        view = null;
         invalidate();
+    }
+
+    public void clearBatchAppsAnimatedView(){
+        mAnimatorSet.cancel();
+        mAnimators.clear();
+    }
+
+    public void clearAnimatedView(){
+        mAnimatorSet.cancel();
+        mAnimators.clear();
+        clearAnimatedView(mDropView, mDropAnim);
     }
 
     public View getAnimatedView() {

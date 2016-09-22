@@ -16,6 +16,8 @@
 
 package com.android.launcher3;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.res.Resources;
@@ -36,9 +38,12 @@ import android.view.inputmethod.InputMethodManager;
 
 import com.android.launcher3.util.Thunk;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import org.codeaurora.snaplauncher.BatchArrangeDragView;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import org.codeaurora.snaplauncher.R;
 /**
  * Class for initiating a drag within a view or across multiple views.
@@ -256,6 +261,8 @@ public class DragController {
 
         final DragView dragView = mDragObject.dragView = new DragView(mLauncher, b, registrationX,
                 registrationY, 0, 0, b.getWidth(), b.getHeight(), initialDragViewScale);
+        final List<BatchArrangeDragView> snapDragViews = mDragObject.snapDragViews =
+                generateSnapDragViews(registrationX, registrationY);
 
         if (dragOffset != null) {
             dragView.setDragVisualizeOffset(new Point(dragOffset));
@@ -266,8 +273,38 @@ public class DragController {
 
         mLauncher.getDragLayer().performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
         dragView.show(mMotionDownX, mMotionDownY);
+        showSnapDragViews(snapDragViews);
         handleMoveEvent(mMotionDownX, mMotionDownY);
         return dragView;
+    }
+
+    private void showSnapDragViews(List<BatchArrangeDragView> snapDragViews){
+        final AnimatorSet animatorSet = LauncherAnimUtils.createAnimatorSet();
+        final Collection<Animator> animators = new ArrayList<Animator>();
+        for (BatchArrangeDragView dragView: snapDragViews){
+            dragView.show();
+            animators.add(dragView.getAnim());
+        }
+        animatorSet.playTogether(animators);
+        animatorSet.start();
+    }
+
+    private List<BatchArrangeDragView> generateSnapDragViews(int registrationX,
+             int registrationY){
+        List<BatchArrangeDragView> snapDragViews = new ArrayList<>();
+        for (final View view : mLauncher.getBatchArrangeApps().values()) {
+            BatchArrangeDragView dragView = new BatchArrangeDragView(mLauncher,view,
+                    registrationX,registrationY);
+            dragView.prepareStartAnimation(mMotionDownX, mMotionDownY);
+            snapDragViews.add(dragView);
+        }
+        return snapDragViews;
+    }
+
+    private void removeSnapDragViews(){
+        for (BatchArrangeDragView dragView: mDragObject.snapDragViews){
+            dragView.remove();
+        }
     }
 
     /**
@@ -376,7 +413,9 @@ public class DragController {
                 }
                 mDragObject.dragView = null;
             }
-
+            if (!isDeferred){
+                removeSnapDragViews();
+            }
             // Only end the drag if we are not deferred
             if (!isDeferred) {
                 for (DragListener listener : new ArrayList<>(mListeners)) {
@@ -506,6 +545,9 @@ public class DragController {
 
     private void handleMoveEvent(int x, int y) {
         mDragObject.dragView.move(x, y);
+        for (BatchArrangeDragView dragView: mDragObject.snapDragViews){
+            dragView.move(x, y);
+        }
 
         // Drop on someone?
         final int[] coordinates = mCoordinatesTemp;
@@ -532,7 +574,7 @@ public class DragController {
     private void checkTouchMove(DropTarget dropTarget) {
         if (dropTarget != null) {
             if(mLastDropTarget instanceof  Hotseat && dropTarget instanceof  Workspace){
-                Hotseat.setDragViewVisibility(false);
+                mLauncher.mHotseat.setDragViewVisibility(false);
                 Hotseat.mDragFromWorkspace = false;
             }else if((mLastDropTarget instanceof  Workspace && dropTarget instanceof  Hotseat)
                     || (mLastDropTarget instanceof  Folder && dropTarget instanceof  Hotseat)){

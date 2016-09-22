@@ -89,7 +89,7 @@ public class InfoDropTarget extends ButtonDropTarget {
     @Override
     protected boolean supportsDrop(DragSource source, Object info) {
         if (LauncherAppState.isSingleShow()) {
-            return checkSingleSupportDrop(info);
+            return checkSingleSupportDrop(info) && isInBatchArrangeMode();
         }
         return source.supportsAppInfoDropTarget() && supportsDrop(getContext(), info);
     }

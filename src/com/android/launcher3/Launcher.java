@@ -381,6 +381,8 @@ public class Launcher extends Activity
 
     private Context mContext;
     private ArrayList<Long> mEmptyScreenList;
+    private Map<ComponentName, View> mArrangeShortcuts = new HashMap<>();
+    private Map<ComponentName, View> mArrangeShortcutsFinal = new HashMap<>();
     protected static HashMap<String, CustomAppWidget> sCustomAppWidgets =
             new HashMap<String, CustomAppWidget>();
 
@@ -2527,6 +2529,13 @@ public class Launcher extends Activity
             return;
         }
 
+        if (mWorkspace.getState() == Workspace.State.ARRANGE){
+            clearBatchArrangeApps();
+            mWorkspace.setStateWithAnimation(Workspace.State.NORMAL,
+                    WorkspaceStateTransitionAnimation.SCROLL_TO_CURRENT_PAGE,false,null);
+            return;
+        }
+
         if (isAppsViewVisible()) {
             showWorkspace(true);
         } else if (isWidgetsViewVisible())  {
@@ -2727,6 +2736,11 @@ public class Launcher extends Activity
      */
     protected void onClickAppShortcut(final View v) {
         if (LOGD) Log.d(TAG, "onClickAppShortcut");
+        if (mWorkspace.getState() == Workspace.State.ARRANGE && v instanceof BubbleTextView){
+            updateBatchArrangeAppsState((BubbleTextView)v);
+            mSearchDropTargetBar.updateBatchArrangeTips(mArrangeShortcuts);
+            return;
+        }
         Object tag = v.getTag();
         if (!(tag instanceof ShortcutInfo)) {
             throw new IllegalArgumentException("Input must be a Shortcut");
@@ -3350,14 +3364,16 @@ public class Launcher extends Activity
         if (!mDragController.isDragging()) {
             if (itemUnderLongClick == null) {
                 // User long pressed on empty space
-                mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
-                        HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                if (mWorkspace.getState() != Workspace.State.ARRANGE){
+                    mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+                }
                 if (mWorkspace.isInOverviewMode()) {
                     long screenId = mWorkspace.getIdForScreen((CellLayout)v);
                     if (screenId != mWorkspace.EXTRA_EMPTY_SCREEN_ID) {
                         mWorkspace.startReordering(v);
                     }
-                } else {
+                } else if (mWorkspace.getState() != Workspace.State.ARRANGE){
                     showOverviewMode(true);
                 }
             } else {
@@ -3367,11 +3383,91 @@ public class Launcher extends Activity
                                 longClickCellInfo.cellY));
                 if (!(itemUnderLongClick instanceof Folder || isAllAppsButton)) {
                     // User long pressed on an item
-                    mWorkspace.startDrag(longClickCellInfo);
+                    if (supportDrag(itemUnderLongClick)){
+                        if (isHotseatItem(itemUnderLongClick)){
+                            mHotseat.startDrag(itemUnderLongClick);
+                        }else {
+                            mWorkspace.startDrag(longClickCellInfo);
+                        }
+                    }
                 }
             }
+        }else {
+            changeWorkModeToArrange(v);
         }
         return true;
+    }
+
+    public boolean supportDrag(View view){
+        if (mWorkspace.getState() != Workspace.State.ARRANGE){
+            mArrangeShortcuts.clear();
+            mArrangeShortcutsFinal.clear();
+            return true;
+        }else {
+            ItemInfo info = (ItemInfo)view.getTag();
+            if (info instanceof ShortcutInfo
+                    && mArrangeShortcuts.values().contains(view)){
+                mArrangeShortcutsFinal.clear();
+                for (Map.Entry<ComponentName, View> entry : mArrangeShortcuts.entrySet()) {
+                    if (!entry.getKey().equals(((ShortcutInfo)info).getTargetComponent())){
+                        mArrangeShortcutsFinal.put(entry.getKey(),entry.getValue());
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public void changeWorkModeToArrange(View view){
+        if (mWorkspace.getState() == Workspace.State.NORMAL
+                && view instanceof BubbleTextView){
+            mWorkspace.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                    HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+            mDragController.cancelDrag();
+            mWorkspace.setStateWithAnimation(Workspace.State.ARRANGE,
+                    WorkspaceStateTransitionAnimation.SCROLL_TO_CURRENT_PAGE,false,null);
+            updateBatchArrangeAppsState(view);
+            mSearchDropTargetBar.resetBatchArrangeTips();
+        }
+    }
+
+    public void updateBatchArrangeApps(View cell){
+        ShortcutInfo info = (ShortcutInfo)cell.getTag();
+        mArrangeShortcuts.put(info.getTargetComponent(), cell);
+        ((BubbleTextView)cell).resetLeftCorner();
+    }
+
+    public Map<ComponentName, View> getBatchArrangeApps(){
+        return mArrangeShortcutsFinal;
+    }
+
+    public Map<ComponentName, View> getBatchArrangeAppsAll(){
+        return mArrangeShortcuts;
+    }
+
+    public void clearBatchArrangeApps(){
+        for (View view: mArrangeShortcuts.values()){
+            ((BubbleTextView)view).startSelectOrCancelAnimation(false);
+        }
+        mArrangeShortcuts.clear();
+    }
+
+    private void updateBatchArrangeAppsState(View itemUnderLongClick){
+        ShortcutInfo info = (ShortcutInfo)itemUnderLongClick.getTag();
+        if (mArrangeShortcuts.values().contains(itemUnderLongClick)){
+            mArrangeShortcuts.remove(info.getTargetComponent());
+            ((BubbleTextView)itemUnderLongClick).startSelectOrCancelAnimation(false);
+        }else {
+            if (mArrangeShortcuts.size() >= 5)return ;
+            mArrangeShortcuts.put(info.getTargetComponent(), itemUnderLongClick);
+            ((BubbleTextView)itemUnderLongClick).startSelectOrCancelAnimation(true);
+        }
+    }
+
+    private boolean isHotseatItem(View view){
+        return view != null && view.getParent()!= null
+                && view.getParent() instanceof Hotseat;
     }
 
     boolean isHotseatLayout(View layout) {
@@ -3476,7 +3572,8 @@ public class Launcher extends Activity
             mWorkspace.setVisibility(View.VISIBLE);
             mStateTransitionAnimation.startAnimationToWorkspace(mState, mWorkspace.getState(),
                     Workspace.State.NORMAL, snapToPage, animated, onCompleteRunnable);
-
+            clearBatchArrangeApps();
+            mDragController.cancelDrag();
             // Set focus to the AppsCustomize button
             if (mAllAppsButton != null) {
                 mAllAppsButton.requestFocus();
@@ -3507,7 +3604,7 @@ public class Launcher extends Activity
         Drawable d = getResources().getDrawable(R.drawable.close);
         deleteScreenButton.setBackgroundDrawable(d);
         final CellLayout.LayoutParams lp = new CellLayout.LayoutParams(3,0,1,1);
-        emptyscreen.addViewToCellLayout(contentview, -1, contentview.getId(), lp, true);
+        emptyscreen.addViewToCellLayout(contentview, -1, contentview.getId(), lp, false);
 
         deletecontainer.setOnClickListener(new View.OnClickListener() {
             @Override

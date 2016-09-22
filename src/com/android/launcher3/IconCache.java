@@ -114,6 +114,8 @@ public class IconCache {
     private Canvas mLowResCanvas;
     private Paint mLowResPaint;
 
+    private Bitmap mSelectBitmap;
+
     public IconCache(Context context, InvariantDeviceProfile inv) {
         mContext = context;
         mPackageManager = context.getPackageManager();
@@ -127,6 +129,8 @@ public class IconCache {
         mActivityBgColor = context.getResources().getColor(R.color.quantum_panel_bg_color);
         mPackageBgColor = context.getResources().getColor(R.color.quantum_panel_bg_color_dark);
         mLowResOptions = new BitmapFactory.Options();
+        mSelectBitmap = BitmapFactory.decodeResource(mContext.getResources(),
+                R.drawable.arrange_select);
         // Always prefer RGB_565 config for low res. If the bitmap has transparency, it will
         // automatically be loaded as ALPHA_8888.
         mLowResOptions.inPreferredConfig = Bitmap.Config.RGB_565;
@@ -508,6 +512,9 @@ public class IconCache {
         shortcutInfo.usingLowResIcon = entry.isLowResIcon;
     }
 
+    public Bitmap getArrangSelectBitmap(){
+        return mSelectBitmap;
+    }
     private int getUnreadNumber(ComponentName componentName){
         int unreadNumber = -1;
         if(mAppIconReloaded){

@@ -18,8 +18,9 @@ package com.android.launcher3;
 
 import android.graphics.PointF;
 import android.graphics.Rect;
-
+import org.codeaurora.snaplauncher.BatchArrangeDragView;
 import org.codeaurora.snaplauncher.R;
+import java.util.List;
 
 /**
  * Interface defining an object that can receive a drag.
@@ -44,6 +45,8 @@ public interface DropTarget {
          * the current drag target, or when the drag moves off the current drag object.
          */
         public boolean dragComplete = false;
+
+        public List<BatchArrangeDragView> snapDragViews = null;
 
         /** The view that moves around while you drag.  */
         public DragView dragView = null;
@@ -90,6 +93,10 @@ public interface DropTarget {
             res[1] = top + dragView.getDragRegion().height() / 2;
 
             return res;
+        }
+
+        public int getBatchArrangeAppsSize(){
+            return snapDragViews != null ? snapDragViews.size() : 0;
         }
     }
 

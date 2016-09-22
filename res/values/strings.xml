@@ -267,4 +267,9 @@
     <string name="permission_access_external_storage">Access External Storage</string>
 
     <string name="missing_required_permission">You have disabled a required permission.</string>
+
+    <!-- Label Text for the batch arrange apps. -->
+    <string name="batch_tips_target_label_initial">Tap icon to batch arrange apps</string>
+    <string name="batch_tips_target_drag_start_label">Release to place apps</string>
+    <string name="batch_tips_target_drag_label_selected">selected，long press to drag</string>
 </resources>

@@ -62,6 +62,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Stack;
 
 import org.codeaurora.snaplauncher.R;
@@ -2396,6 +2397,7 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
         for (int i = 0; i < count; i++) {
             View child = mShortcutsAndWidgets.getChildAt(i);
             if (child == dragView) continue;
+            if (dropOverViewsWhenArrange(child))continue;
             LayoutParams lp = (LayoutParams) child.getLayoutParams();
             r1.set(lp.cellX, lp.cellY, lp.cellX + lp.cellHSpan, lp.cellY + lp.cellVSpan);
             if (Rect.intersects(r0, r1)) {
@@ -2405,6 +2407,15 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
                 }
             }
         }
+    }
+
+    private boolean dropOverViewsWhenArrange(View child){
+        for (final View view : mLauncher.getBatchArrangeApps().values()) {
+            if (child == view){
+                return true;
+            }
+        }
+        return false;
     }
 
     boolean isNearestDropLocationOccupied(int pixelX, int pixelY, int spanX, int spanY,
@@ -3034,5 +3045,38 @@ public class CellLayout extends ViewGroup implements BubbleTextShadowHandler {
         }
 
         return true;
+    }
+
+    public List<int[]> findSortedVacantCells(boolean[][] occupied, int targetCellX,
+            int targetCellY){
+        List<int[]> targetList = new ArrayList<>();
+        List<int[]> vacantList = new ArrayList<>();
+        for (int j = 0; j < mCountY; j++) {
+            for (int i = 0; i < mCountX; i++) {
+                if (targetCellX == i && targetCellY == j){
+                    continue;
+                }
+                if (!occupied[i][j]){
+                    int[] vacantCell = new int[2];
+                    vacantCell[0] = i;
+                    vacantCell[1] = j;
+                    if (j > targetCellY || (j == targetCellY && i> targetCellX)){
+                        targetList.add(vacantCell);
+                    }else {
+                        vacantList.add(vacantCell);
+                    }
+                }
+            }
+        }
+        for (int i=0; i < vacantList.size(); i++){
+            targetList.add(vacantList.get(i));
+        }
+        return targetList;
+    }
+
+    public boolean[][] copyOccupiedArray() {
+        boolean[][] temp = new boolean[mCountX][mCountY];
+        System.arraycopy(mOccupied, 0, temp, 0, mOccupied.length);
+        return temp;
     }
 }

@@ -29,6 +29,7 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.view.View;
 import android.view.animation.DecelerateInterpolator;
@@ -67,6 +68,16 @@ public class DragView extends View {
     @Thunk float[] mCurrentFilter;
     private ValueAnimator mFilterAnimator;
 
+    private Launcher mLauncher;
+    private int mRadius;
+    private Paint mCirclePaint;
+    private Paint mSelectBitmapPaint;
+    private Paint mNumberPaint;
+    private int mNumberTextSize;
+    private float mCornerProgress = 0.0f;
+    private int mNumber;
+    private ValueAnimator mSelectAnim;
+
     /**
      * Construct the drag view.
      * <p>
@@ -84,6 +95,8 @@ public class DragView extends View {
         super(launcher);
         mDragLayer = launcher.getDragLayer();
         mInitialScale = initialScale;
+
+        mLauncher = launcher;
 
         final Resources res = getResources();
         final float scaleDps = res.getDimensionPixelSize(R.dimen.dragViewScale);
@@ -136,6 +149,43 @@ public class DragView extends View {
         if (Utilities.ATLEAST_LOLLIPOP) {
             setElevation(getResources().getDimension(R.dimen.drag_elevation));
         }
+
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE){
+            mRadius = res.getDimensionPixelSize(R.dimen.default_arrange_select_circle_radius);
+        }else {
+            mRadius = 0;
+        }
+
+        mCirclePaint = new Paint();
+        mCirclePaint.setAntiAlias(true);
+        mCirclePaint.setStyle(Paint.Style.FILL);
+        mCirclePaint.setColor(Color.WHITE);
+
+        mSelectBitmapPaint = new Paint();
+        mSelectBitmapPaint.setAntiAlias(true);
+
+        mNumberPaint = new Paint();
+        mNumberPaint.setAntiAlias(true);
+        mNumberPaint.setColor(res.getColor(R.color.default_arrange_select_number_color));
+        mNumberPaint.setTypeface(Typeface.SANS_SERIF);
+        mNumberTextSize = res.getDimensionPixelSize(R.dimen.default_arrange_select_number_textsize);
+        mNumberPaint.setTextSize(mNumberTextSize);
+
+        mNumber = mLauncher.getBatchArrangeAppsAll().size();
+        mSelectAnim = LauncherAnimUtils.ofFloat(this, 0f, 1f);
+        mSelectAnim.setDuration(300);
+        mSelectAnim.addUpdateListener(new AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                final float value = (Float) animation.getAnimatedValue();
+                mCornerProgress = value;
+                invalidate();
+            }
+        });
+    }
+
+    protected DragView(Launcher launcher){
+        super(launcher);
     }
 
     /** Sets the scale of the view over the normal workspace icon size. */
@@ -193,7 +243,8 @@ public class DragView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        setMeasuredDimension(mBitmap.getWidth(), mBitmap.getHeight());
+        setMeasuredDimension(2 * mRadius + mBitmap.getWidth(),
+                2 * mRadius + mBitmap.getHeight());
     }
 
     @Override
@@ -213,7 +264,30 @@ public class DragView extends View {
             int alpha = crossFade ? (int) (255 * (1 - mCrossFadeProgress)) : 255;
             mPaint.setAlpha(alpha);
         }
-        canvas.drawBitmap(mBitmap, 0.0f, 0.0f, mPaint);
+        canvas.drawBitmap(mBitmap, mRadius, mRadius, mPaint);
+
+        //draw number icon
+        if(mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE
+                && mNumber > 0){
+            canvas.drawCircle(mRadius, mRadius, mRadius, mCirclePaint);
+            if(mCornerProgress == 1){
+                String text = String.valueOf(mNumber);
+                int textWidth = (int)(mNumberPaint.measureText(text));
+                Rect textBounds = new Rect();
+                mNumberPaint.getTextBounds(text, 0, text.length(), textBounds);
+                int textHeight = textBounds.height();
+                canvas.drawText(text, mRadius - textWidth / 2, mRadius + textHeight / 2,
+                        mNumberPaint);
+            }else{
+                Bitmap bitmap = mLauncher.mIconCache.getArrangSelectBitmap();
+                mSelectBitmapPaint.setAlpha((int)(255 * (1 - mCornerProgress)));
+
+                Rect srcRect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                Rect destRect = new Rect(0, 0, 2 * mRadius, 2 * mRadius);
+                canvas.drawBitmap(bitmap, srcRect, destRect, mSelectBitmapPaint);
+            }
+        }
+
         if (crossFade) {
             mPaint.setAlpha((int) (255 * mCrossFadeProgress));
             canvas.save();
@@ -272,7 +346,8 @@ public class DragView extends View {
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void animateFilterTo(float[] targetFilter) {
-        float[] oldFilter = mCurrentFilter == null ? new ColorMatrix().getArray() : mCurrentFilter;
+        float[] oldFilter = mCurrentFilter == null ? new ColorMatrix().getArray()
+                : mCurrentFilter;
         mCurrentFilter = Arrays.copyOf(oldFilter, oldFilter.length);
 
         if (mFilterAnimator != null) {
@@ -299,8 +374,10 @@ public class DragView extends View {
     @Override
     public void setAlpha(float alpha) {
         super.setAlpha(alpha);
-        mPaint.setAlpha((int) (255 * alpha));
-        invalidate();
+        if (mPaint != null){
+            mPaint.setAlpha((int) (255 * alpha));
+            invalidate();
+        }
     }
 
     /**
@@ -315,18 +392,21 @@ public class DragView extends View {
 
         // Start the pick-up animation
         DragLayer.LayoutParams lp = new DragLayer.LayoutParams(0, 0);
-        lp.width = mBitmap.getWidth();
-        lp.height = mBitmap.getHeight();
+        lp.width = mBitmap.getWidth() + 2 * mRadius;
+        lp.height = mBitmap.getHeight() +2 *  mRadius;
         lp.customPosition = true;
         setLayoutParams(lp);
-        setTranslationX(touchX - mRegistrationX);
-        setTranslationY(touchY - mRegistrationY);
+
+        setTranslationX(touchX - mRegistrationX - mRadius);
+        setTranslationY(touchY - mRegistrationY - mRadius);
+
         // Post the animation to skip other expensive work happening on the first frame
         post(new Runnable() {
                 public void run() {
                     mAnim.start();
                 }
             });
+        mSelectAnim.start();
     }
 
     public void cancelAnimation() {
@@ -347,11 +427,11 @@ public class DragView extends View {
      * @param touchY the y coordinate the user touched in DragLayer coordinates
      */
     void move(int touchX, int touchY) {
-        setTranslationX(touchX - mRegistrationX + (int) mOffsetX);
-        setTranslationY(touchY - mRegistrationY + (int) mOffsetY);
+        setTranslationX(touchX - mRegistrationX + (int) mOffsetX - mRadius);
+        setTranslationY(touchY - mRegistrationY + (int) mOffsetY - mRadius);
     }
 
-    void remove() {
+    public void remove() {
         if (getParent() != null) {
             mDragLayer.removeView(DragView.this);
         }
@@ -361,4 +441,9 @@ public class DragView extends View {
         target.setScale(Color.red(color) / 255f, Color.green(color) / 255f,
                 Color.blue(color) / 255f, Color.alpha(color) / 255f);
     }
+
+    public int getLeftCornerRadius(){
+        return mRadius;
+    }
+
 }

@@ -25,7 +25,6 @@ import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
@@ -35,24 +34,22 @@ import com.android.launcher3.util.Thunk;
 
 import java.util.ArrayList;
 import org.codeaurora.snaplauncher.R;
-
 public class Hotseat extends LinearLayout implements DragSource, DropTarget,
-    OnLongClickListener, DragListener {
+    DragListener {
 
     private static final int MAX_HOTSEAT = 5;
+    private CellLayout mContent;
     private  Hotseat mContentHotSeat;
     private static final int HOTSEAT_SCREEN = -1;
 
     private Launcher mLauncher;
     private int mItemWidth;
     private int mItemHeight;
-    private IconCache mIconCache;
-    private static View mDragView;
+    private View mDragView;
     private ItemInfo mDragInfo;
     private int mDragPos = -1;
     private static boolean isSwap = false;
     private static boolean bSuccess = true;
-    private static boolean bExchange = false;
     private static boolean bUninstall = false;
 
     private static final int DRAG_MODE_NONE = 0;
@@ -78,6 +75,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     @Thunk final int[] mTempLocation = new int[2];
     private ArrayList<FolderIcon.FolderRingAnimator> mFolderOuterRings =
             new ArrayList<FolderIcon.FolderRingAnimator>();
+    private OnLongClickListener mLongClickListener;
 
     public Hotseat(Context context) {
         this(context, null);
@@ -216,7 +214,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             FolderInfo info = (FolderInfo) item;
             mFolderView= createFolderSeat(view, info);
             mFolderView.setTag(info);
-            mFolderView.setOnLongClickListener(this);
+            mFolderView.setOnLongClickListener(mLongClickListener);
             if(visible) {
                 mFolderView.setVisibility(View.VISIBLE);
             }else{
@@ -236,7 +234,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             ShortcutInfo info = (ShortcutInfo) item;
             mLauncher.createHotseatShortcut(hotseatV, info);
             hotseatV.setTag(info);
-            hotseatV.setOnLongClickListener(this);
+            hotseatV.setOnLongClickListener(mLongClickListener);
             if(visible){
                 hotseatV.setVisibility(View.VISIBLE);
             }else {
@@ -342,22 +340,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         mDragInfo = seatinfo;
         isSwap = true;
         if (seatinfo != null) { // exchange item
-            Workspace workspace = mLauncher.getWorkspace();
-                if (d.dragSource instanceof Workspace) {
-                    bExchange = true;
-                    View child;
-                    if(seatinfo.itemType == LauncherSettings.Favorites.ITEM_TYPE_FOLDER) {
-                        child = FolderIcon.fromXml(R.layout.folder_icon, mLauncher,
-                                mContentHotSeat, (FolderInfo) seatinfo, mLauncher.mIconCache);
-                    }else{
-                        child = mLauncher.createShortcut((ShortcutInfo) seatinfo);
-                    }
-                    workspace.addInScreen(child, dragInfo.container, dragInfo.screenId,
-                            dragInfo.cellX, dragInfo.cellY, dragInfo.spanX, dragInfo.spanY);
-                    LauncherModel.moveItemInDatabase(mLauncher, seatinfo, dragInfo.container,
-                            dragInfo.screenId, dragInfo.cellX, dragInfo.cellY);
-                }
-
             isSwap = false;
             mDragView = null;
             mDragPos = -1;
@@ -442,7 +424,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         setCurrentDropLayout(null);
     }
 
-    public static void  setDragViewVisibility(boolean visible){
+    public void  setDragViewVisibility(boolean visible){
         if(mDragView != null) {
             if (visible) {
                 mDragView.setVisibility(View.VISIBLE);
@@ -501,6 +483,17 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     private  void  setCurrentDropTarget(View dropTargetLayout){
         mCurrentDropLayout = dropTargetLayout;
+    }
+
+    /**
+     * Registers the specified listener on each page contained in this Hotseat.
+     *
+     * @param l The listener used to respond to long clicks.
+     */
+    @Override
+    public void setOnLongClickListener(OnLongClickListener l) {
+        mLongClickListener = l;
+        super.setOnLongClickListener(l);
     }
 
     @Override
@@ -662,19 +655,13 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         }
     }
 
-    @Override
-    public boolean onLongClick(View view) {
-        if (mLauncher.isWorkspaceLocked()) {
-            return true;
-        }
-
+    public void startDrag(View view){
         ItemInfo info = (ItemInfo) view.getTag();
         mDragView = view;
         mDragView.setPressed(false);
         mDragPos = getDragPosBycellX(info.cellX);
         mLauncher.getWorkspace().beginDragShared(view, this, false);
         view.setVisibility(View.INVISIBLE);
-        return true;
     }
 
     @Override
@@ -735,7 +722,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             LauncherModel.addOrMoveItemInDatabase(mLauncher, info, LauncherSettings.
                     Favorites.CONTAINER_HOTSEAT, HOTSEAT_SCREEN, i, 0);
         }
-        bExchange = false;
         bUninstall = false;
         mDragPos = -1;
         mDragInfo = null;

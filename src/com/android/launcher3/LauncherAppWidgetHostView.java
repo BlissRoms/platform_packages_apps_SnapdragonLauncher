@@ -86,6 +86,12 @@ public class LauncherAppWidgetHostView extends AppWidgetHostView implements Touc
             mLongPressHelper.cancelLongPress();
         }
 
+        // When workspace is in the Arrange Model, we should shield the touch event
+        Launcher launcher = (Launcher)mContext;
+        if (launcher.mWorkspace.getState() == Workspace.State.ARRANGE){
+            return true;
+        }
+
         // Consume any touch events for ourselves after longpress is triggered
         if (mLongPressHelper.hasPerformedLongPress()) {
             mLongPressHelper.cancelLongPress();

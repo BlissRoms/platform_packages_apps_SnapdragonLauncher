@@ -64,4 +64,9 @@
         </FrameLayout>
     </LinearLayout>
 
+    <org.codeaurora.snaplauncher.BatchTipsView
+        android:id="@+id/batch_tips_bar"
+        style="@style/DropTargetButton"
+        android:text="@string/batch_tips_target_label_initial" />
+
 </com.android.launcher3.SearchDropTargetBar>

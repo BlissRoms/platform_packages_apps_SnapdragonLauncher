@@ -17,6 +17,7 @@
 package com.android.launcher3;
 
 import android.animation.ObjectAnimator;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.ColorStateList;
@@ -25,8 +26,11 @@ import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.Region;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -74,6 +78,7 @@ public class BubbleTextView extends TextView
     private static final int FAST_SCROLL_FOCUS_FADE_OUT_DURATION = 125;
 
     private final Launcher mLauncher;
+    private final Paint mPaint;
     private Drawable mIcon;
     private final Drawable mBackground;
     private final CheckLongPressHelper mLongPressHelper;
@@ -106,6 +111,9 @@ public class BubbleTextView extends TextView
 
     private boolean mIsHotseat = false;
     private boolean isLand = false;
+    private ValueAnimator mAnimator;
+    private float mArrangeSelectCircleRadius;
+    private float mProgress = 0f;
 
     public BubbleTextView(Context context) {
         this(context, null, 0);
@@ -163,6 +171,14 @@ public class BubbleTextView extends TextView
             mFastScrollFocusBgPaint.setColor(
                     getResources().getColor(R.color.container_fastscroll_thumb_active_color));
         }
+
+        mPaint = new Paint();
+        mPaint.setAntiAlias(true);
+        mPaint.setStyle(Paint.Style.FILL);
+        mPaint.setColor(Color.WHITE);
+
+        mArrangeSelectCircleRadius = getResources().getDimension(
+                R.dimen.default_arrange_select_circle_radius);
 
         setAccessibilityDelegate(LauncherAppState.getInstance().getAccessibilityDelegate());
     }
@@ -312,6 +328,11 @@ public class BubbleTextView extends TextView
                 if (!mStylusEventHelper.inStylusButtonPressed()) {
                     mLongPressHelper.postCheckForLongPress();
                 }
+                if (mLauncher.getWorkspace().getState() == Workspace.State.NORMAL
+                        && !isLand()){
+                    mLongPressHelper.postCheckForLongPressToArrange();
+                }
+
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
@@ -322,10 +343,12 @@ public class BubbleTextView extends TextView
                 }
 
                 mLongPressHelper.cancelLongPress();
+                mLongPressHelper.cancelLongPressToArrange();
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (!Utilities.pointInView(this, event.getX(), event.getY(), mSlop)) {
                     mLongPressHelper.cancelLongPress();
+                    mLongPressHelper.cancelLongPressToArrange();
                 }
                 break;
         }
@@ -437,6 +460,78 @@ public class BubbleTextView extends TextView
         getPaint().setShadowLayer(SHADOW_SMALL_RADIUS, 0.0f, 0.0f, SHADOW_SMALL_COLOUR);
         super.draw(canvas);
         canvas.restore();
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas){
+        super.onDraw(canvas);
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE){
+            drawLeftBatchCorner(canvas);
+        }else {
+            mProgress = 0f;
+        }
+    }
+
+    private void drawLeftBatchCorner(Canvas canvas){
+        if (mProgress == 0f){
+            return;
+        }
+
+        Bitmap animBitmap = mLauncher.mIconCache.getArrangSelectBitmap();
+        if(animBitmap != null){
+            int animWidth = animBitmap.getWidth();
+            int animHeight = animBitmap.getHeight();
+
+            int x = (getWidth() - mIconSize) / 2;
+            int y = getTotalPaddingTop() - mIconSize - getCompoundDrawablePadding();
+
+            x = (x >= (int)mArrangeSelectCircleRadius) ? x : (int)mArrangeSelectCircleRadius;
+            y = (y >= (int)mArrangeSelectCircleRadius) ? y : (int)mArrangeSelectCircleRadius;
+
+            int scaleWidthRadius = (int)(mProgress * animWidth / 2);
+            int scaleHeightRadius = (int)(mProgress * animHeight / 2);
+
+            canvas.translate(getScrollX(), getScrollY());
+
+            canvas.drawCircle(x, y, mArrangeSelectCircleRadius * mProgress, mPaint);
+            Rect srcRect = new Rect(0, 0, animWidth, animHeight);
+            Rect destRect = new Rect(x - scaleWidthRadius,
+                    y - scaleHeightRadius,
+                    x + scaleWidthRadius,
+                    y + scaleHeightRadius);
+            canvas.drawBitmap(animBitmap, srcRect, destRect, mPaint);
+        }
+    }
+
+    public void resetLeftCorner(){
+        updateLeftCorner(1f);
+    }
+
+    private void updateLeftCorner(float progress){
+        mProgress = progress;
+        invalidate();
+    }
+
+    public void startSelectOrCancelAnimation(boolean display){
+        if (mAnimator != null && mAnimator.isRunning()){
+            return;
+        }
+        if (display){
+            mAnimator = LauncherAnimUtils.ofFloat(this, 0f, 1f);
+        }else {
+            mAnimator = LauncherAnimUtils.ofFloat(this, 1f, 0f);
+        }
+
+        mAnimator.setDuration(150);
+        mAnimator.setInterpolator(null);
+        mAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                float value = (Float)animation.getAnimatedValue();
+                updateLeftCorner(value);
+            }
+        });
+        mAnimator.start();
     }
 
     @Override

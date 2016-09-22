@@ -54,4 +54,6 @@
     <color name="infomation_count_circle_color">#F44336</color>
 
     <color name="msg_hint_color">#fff</color>
+
+    <color name="default_arrange_select_number_color">#4E8DF6</color>
 </resources>
