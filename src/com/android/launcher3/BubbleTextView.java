@@ -329,8 +329,12 @@ public class BubbleTextView extends TextView
                     mLongPressHelper.postCheckForLongPress();
                 }
                 if (mLauncher.getWorkspace().getState() == Workspace.State.NORMAL
-                        && !isLand()){
-                    mLongPressHelper.postCheckForLongPressToArrange();
+                        && !isLand()
+                        && getTag() instanceof ShortcutInfo){
+                    ShortcutInfo info = (ShortcutInfo)getTag();
+                    if (info.getTargetComponent() != null) {
+                        mLongPressHelper.postCheckForLongPressToArrange();
+                    }
                 }
 
                 break;
