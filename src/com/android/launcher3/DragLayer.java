@@ -235,6 +235,11 @@ public class DragLayer extends InsettableFrameLayout {
                 mTouchCompleteListener.onTouchComplete();
             }
             mTouchCompleteListener = null;
+        } else if (action == MotionEvent.ACTION_MOVE){
+            Folder currentFolder = mLauncher.getWorkspace().getOpenFolder();
+            if (currentFolder != null){
+                currentFolder.cancelDelaySwitch();
+            }
         }
         clearAllResizeFrames();
         return mDragController.onInterceptTouchEvent(ev);
