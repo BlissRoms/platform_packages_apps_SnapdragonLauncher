@@ -895,6 +895,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
                 if (dragView.getType() == BatchArrangeDragView.BubbleTextViewType.FOLDER){
                     ShortcutInfo si = (ShortcutInfo) dragView.getView().getTag();
                     views.add(si.rank, dragView.getView());
+                }else {
+                    dragView.getView().setVisibility(VISIBLE);
                 }
             }
             mContent.arrangeChildren(views, views.size());

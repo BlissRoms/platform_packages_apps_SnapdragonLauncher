@@ -30,45 +30,51 @@ import android.view.WindowManager;
 import android.widget.LinearLayout;
 import android.graphics.PointF;
 import com.android.launcher3.DragController.DragListener;
+import com.android.launcher3.UninstallDropTarget.UninstallSource;
 import com.android.launcher3.util.Thunk;
 
 import java.util.ArrayList;
+
+import org.codeaurora.snaplauncher.BatchArrangeDragView;
 import org.codeaurora.snaplauncher.R;
+
 public class Hotseat extends LinearLayout implements DragSource, DropTarget,
-    DragListener {
+        DragListener, UninstallSource {
 
     private static final int MAX_HOTSEAT = 5;
-    private CellLayout mContent;
-    private  Hotseat mContentHotSeat;
+    private Hotseat mContentHotSeat;
     private static final int HOTSEAT_SCREEN = -1;
 
     private Launcher mLauncher;
     private int mItemWidth;
     private int mItemHeight;
     private View mDragView;
-    private ItemInfo mDragInfo;
     private int mDragPos = -1;
-    private static boolean isSwap = false;
-    private static boolean bSuccess = true;
-    private static boolean bUninstall = false;
 
     private static final int DRAG_MODE_NONE = 0;
-    private static final int DRAG_MODE_ADD_TO_FOLDER = 1;
+    private static final int DRAG_MODE_CREATE_FOLDER = 1;
+    private static final int DRAG_MODE_ADD_TO_FOLDER = 2;
     private int mDragMode = DRAG_MODE_NONE;
 
     private final boolean mHasVerticalHotseat;
 
-    public static boolean mDragFromWorkspace = false;
-    private  boolean dropTargetIsFolder = false;
-    private  boolean mDropTargetIsInfoDrop = false;
+    private boolean mDragFromExternal = false;
+    private boolean mWillSetDragViewVisible = false;
+
+    private static final int FOLDER_CREATION_TIMEOUT = 0;
+    private final Alarm mFolderCreationAlarm = new Alarm();
+    @Thunk FolderIcon.FolderRingAnimator mDragFolderRingAnimator = null;
 
     int mTargetCell = -1;
     float[] mDragViewVisualCenter = new float[2];
     float[] mDropViewVisualCenter = new float[2];
+    private boolean mCreateUserFolderOnDrop = false;
     private  boolean mAddToExistingFolderOnDrop = false;
-    private static  View mCurrentDropLayout = null;
     private FolderIcon mDragOverFolderIcon = null;
     private int mDragOverX = -1;
+
+    private final float mMinDistanceForSwapPosition;
+    private final Alarm mReorderAlarm = new Alarm();
 
     // These are temporary variables to prevent having to allocate a new object just to
     // return an (x, y) value from helper functions. Do NOT use them to maintain other state.
@@ -76,6 +82,15 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     private ArrayList<FolderIcon.FolderRingAnimator> mFolderOuterRings =
             new ArrayList<FolderIcon.FolderRingAnimator>();
     private OnLongClickListener mLongClickListener;
+
+    @Thunk Runnable mDeferredAction;
+    private boolean mDeferDropAfterUninstall;
+    private boolean mUninstallSuccessful;
+
+    private static final int REORDER_TIMEOUT = 50;
+    private ReorderAlarmListener listener;
+    private float mMaxDistanceForFolderCreation;
+    private boolean mLastDropInTargetArea;
 
     public Hotseat(Context context) {
         this(context, null);
@@ -88,26 +103,24 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     /**
      * Given a cell coordinate, return the point that represents the upper left corner of that cell
      *
-     * @param cellX X coordinate of the cell
-     * @param cellY Y coordinate of the cell
-     *
+     * @param cellX  X coordinate of the cell
+     * @param cellY  Y coordinate of the cell
      * @param result Array of 2 ints to hold the x and y coordinate of the point
      */
     void cellToPoint(int cellX, int cellY, int[] result) {
-        final int hStartPadding = getPaddingLeft();
-        final int vStartPadding = getPaddingTop();
-        result[0] = hStartPadding + cellX * mItemWidth;
-        result[1] = (int) (vStartPadding + cellY * (getResources().
+        int pos = getDragPosByCellX(cellX);
+        result[0] = getPaddingLeft() + pos * mItemWidth;
+        result[1] = (int) (getPaddingTop() + cellY * (getResources().
                 getDimension(R.dimen.hotseat_height)));
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        if (isLand()){
+        if (isLand()) {
             setOrientation(VERTICAL);
             updateItemValidHeight();
-        }else{
+        } else {
             setOrientation(HORIZONTAL);
             updateItemValidWidth();
         }
@@ -128,7 +141,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             cellToPoint(fra.mCellX, fra.mCellY, mTempLocation);
             View child = getChildAt(fra.mCellX);
             if (child != null) {
-                int centerX = mTempLocation[0] + mItemWidth / 2;
+                int centerX = (int)mDropViewVisualCenter[0];
                 int centerY = mTempLocation[1] + previewOffset / 2 +
                         child.getPaddingTop() + grid.folderBackgroundOffset;
 
@@ -158,7 +171,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     }
 
     public float getChildrenScale() {
-        return  1.0f;
+        return 1.0f;
     }
 
     public void showFolderAccept(FolderIcon.FolderRingAnimator fra) {
@@ -172,17 +185,26 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         invalidate();
     }
 
-    public boolean isLand(){
+    private boolean isLand() {
         Configuration configuration = getResources().getConfiguration();
-        int  ori = configuration.orientation;
+        int ori = configuration.orientation;
         boolean isLand = false;
-        if(ori == configuration.ORIENTATION_LANDSCAPE){
+        if (ori == configuration.ORIENTATION_LANDSCAPE) {
             isLand = true;
         }
-        if(ori == configuration.ORIENTATION_PORTRAIT){
+        if (ori == configuration.ORIENTATION_PORTRAIT) {
             isLand = false;
         }
         return isLand;
+    }
+
+    private void cleanupFolderCreation() {
+        if (mDragFolderRingAnimator != null) {
+            mDragFolderRingAnimator.animateToNaturalState(false);
+            mDragFolderRingAnimator = null;
+        }
+        mFolderCreationAlarm.setOnAlarmListener(null);
+        mFolderCreationAlarm.cancelAlarm();
     }
 
     private void cleanupAddToFolder() {
@@ -196,6 +218,11 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         if (dragMode != mDragMode) {
             if (dragMode == DRAG_MODE_NONE) {
                 cleanupAddToFolder();
+                cleanupFolderCreation();
+            } else if (dragMode == DRAG_MODE_ADD_TO_FOLDER) {
+                cleanupFolderCreation();
+            } else if (dragMode == DRAG_MODE_CREATE_FOLDER) {
+                cleanupAddToFolder();
             }
             mDragMode = dragMode;
         }
@@ -208,26 +235,26 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         setClipToPadding(false);
 
         View view = getChildAt(item.cellX);
-        if(item.itemType ==  LauncherSettings.Favorites.ITEM_TYPE_FOLDER){
+        if (item.itemType == LauncherSettings.Favorites.ITEM_TYPE_FOLDER) {
 
             FolderIcon mFolderView;
             FolderInfo info = (FolderInfo) item;
-            mFolderView= createFolderSeat(view, info);
+            mFolderView = createFolderSeat(view, info);
             mFolderView.setTag(info);
             mFolderView.setOnLongClickListener(mLongClickListener);
-            if(visible) {
+            if (visible) {
                 mFolderView.setVisibility(View.VISIBLE);
-            }else{
+            } else {
                 mFolderView.setVisibility(View.INVISIBLE);
             }
-            return  mFolderView;
-        }else {
+            return mFolderView;
+        } else {
             BubbleTextView hotseatV;
 
-            if(view instanceof  BubbleTextView){
+            if (view instanceof BubbleTextView) {
                 hotseatV = (BubbleTextView) view;
-            }else {
-                hotseatV = createBubbleTextSeat(view,item);
+            } else {
+                hotseatV = createBubbleTextSeat(view, item);
             }
 
             hotseatV.setIsHotseat(true);
@@ -235,39 +262,54 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             mLauncher.createHotseatShortcut(hotseatV, info);
             hotseatV.setTag(info);
             hotseatV.setOnLongClickListener(mLongClickListener);
-            if(visible){
+            if (visible) {
                 hotseatV.setVisibility(View.VISIBLE);
-            }else {
+            } else {
                 hotseatV.setVisibility(View.INVISIBLE);
             }
-            return  hotseatV;
+            return hotseatV;
         }
     }
 
     private BubbleTextView createBubbleTextSeat(View view, ItemInfo item) {
         removeView(view);
         BubbleTextView favorite = (BubbleTextView) mLauncher.getLayoutInflater().
-                inflate(R.layout.app_icon,mContentHotSeat, false);
-        if(isLand()){
+                inflate(R.layout.app_icon, mContentHotSeat, false);
+        if (isLand()) {
             favorite.setLayoutParams(new LinearLayout.LayoutParams(
-                    LayoutParams.FILL_PARENT, 0,1.0f));
-        }else{
+                    LayoutParams.FILL_PARENT, 0, 1.0f));
+        } else {
             favorite.setLayoutParams(new LinearLayout.LayoutParams(
                     0, LayoutParams.FILL_PARENT, 1.0f));
         }
 
-        addView(favorite,item.cellX);
-        return  favorite;
+        addView(favorite, item.cellX);
+        return favorite;
     }
+
+    public FolderIcon createNewFolderSeat(FolderIcon newFolder, int cellX) {
+        if(isLand()) {
+            newFolder.setLayoutParams(new LinearLayout.LayoutParams(
+                    LayoutParams.FILL_PARENT, 0, 1.0f));
+        }else{
+            newFolder.setLayoutParams(new LinearLayout.LayoutParams(
+                    0, LayoutParams.FILL_PARENT, 1.0f));
+        }
+
+        addView(newFolder, cellX);
+        newFolder.setOnLongClickListener(mLongClickListener);
+        return newFolder;
+    }
+
 
     private FolderIcon createFolderSeat(View view,FolderInfo info) {
         removeView(view);
         FolderIcon folderView = FolderIcon.fromXml(R.layout.folder_icon, mLauncher,
-                mContentHotSeat,info, mLauncher.mIconCache);
-        if(isLand()) {
+                mContentHotSeat, info, mLauncher.mIconCache);
+        if (isLand()) {
             folderView.setLayoutParams(new LinearLayout.LayoutParams(
                     LayoutParams.FILL_PARENT, 0, 1.0f));
-        }else{
+        } else {
             folderView.setLayoutParams(new LinearLayout.LayoutParams(
                     0, LayoutParams.FILL_PARENT, 1.0f));
         }
@@ -276,9 +318,66 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         return  folderView;
     }
 
-    boolean addToExistingFolderIfNecessary( Hotseat target, int targetCell,
-                                            float distance, DragObject d) {
-        if (distance > mLauncher.getWorkspace().mMaxDistanceForFolderCreation) return false;
+    private void removeBatchArrangeViews(DragObject d){
+        for(BatchArrangeDragView dragView:d.snapDragViews){
+            if (dragView.getType() == BatchArrangeDragView.BubbleTextViewType.WORKSPACE){
+                mLauncher.mWorkspace.getParentCellLayoutForView(dragView.getView()).
+                        removeView(dragView.getView());
+            }
+            dragView.remove();
+        }
+    }
+
+    boolean createUserFolderIfNecessary(/*View newView, */long container, Hotseat target,
+                                        int targetCell, float distance, boolean external,
+                                        DragObject d, Runnable postAnimationRunnable) {
+        if (distance > mMaxDistanceForFolderCreation) return false;
+        View v = target.getChildAt(targetCell);
+
+        if (v == null || !mCreateUserFolderOnDrop) return false;
+        mCreateUserFolderOnDrop = false;
+        final long screenId = HOTSEAT_SCREEN;
+        boolean aboveShortcut = (v.getTag() instanceof ShortcutInfo);
+        if (aboveShortcut) {
+            ShortcutInfo sourceInfo = (ShortcutInfo) d.dragInfo;
+            ShortcutInfo destInfo = (ShortcutInfo) v.getTag();
+            removeBatchArrangeViews(d);
+
+            Rect folderLocation = new Rect();
+            float scale = mLauncher.getDragLayer().getDescendantRectRelativeToSelf(v,
+                    folderLocation);
+            target.removeView(v);
+
+            FolderIcon fi =
+                    mLauncher.addFolder(target, container, screenId, targetCell, 0);
+            destInfo.cellX = -1;
+            destInfo.cellY = -1;
+            sourceInfo.cellX = -1;
+            sourceInfo.cellY = -1;
+            for (BatchArrangeDragView dragView: d.snapDragViews){
+                BatchArrangeDragView.resetCellXY(dragView.getShortcutInfo());
+            }
+
+            // If the dragView is null, we can't animate
+            boolean animate = d.dragView != null;
+            if (animate) {
+                fi.performCreateAnimation(destInfo, v, sourceInfo, d, folderLocation, scale,
+                        postAnimationRunnable);
+            } else {
+                fi.addItem(destInfo);
+                fi.addItem(sourceInfo);
+                fi.addSnapViews(d);
+            }
+            mLauncher.clearBatchArrangeApps();
+            return true;
+        }
+        return false;
+    }
+
+    boolean addToExistingFolderIfNecessary(Hotseat target, int targetCell,
+                                           float distance, boolean external,
+                                           DragObject d) {
+        if (distance > mMaxDistanceForFolderCreation) return false;
         View dropOverView = target.getChildAt(targetCell);
         if (!mAddToExistingFolderOnDrop) return false;
         mAddToExistingFolderOnDrop = false;
@@ -287,72 +386,110 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             FolderIcon fi = (FolderIcon) dropOverView;
             if (fi.acceptDrop(d.dragInfo)) {
                 fi.onDrop(d);
+                removeBatchArrangeViews(d);
+                mLauncher.clearBatchArrangeApps();
                 return true;
             }
         }
         return false;
     }
 
-    void setCurrentDropOverCell(int x) {
+    private void setCurrentDropOverCell(int x) {
         if (x != mDragOverX) {
             mDragOverX = x;
             setDragMode(DRAG_MODE_NONE);
         }
     }
 
-    public void setCurrentDropLayout(LinearLayout layout) {
-        setCurrentDropOverCell(-1);
-    }
-
     @Override
     public void onDrop(DragObject d) {
-        int pos ;
-        if(isLand()){
-            pos = d.y / mItemHeight;
-        }else {
-            pos = d.x / mItemWidth;
+        if (mReorderAlarm.alarmPending()){
+            mReorderAlarm.cancelAlarm();
+            listener.onAlarm(mReorderAlarm);
         }
-        if (pos <= 0 ) {
+        final boolean batchArrange = d.snapDragViews != null && d.snapDragViews.size() > 0;
+        int pos = isLand() ? d.y / mItemHeight : d.x / mItemWidth;
+        if (pos <= 0) {
             pos = 0;
-        } else if (pos > getVisibleCnt() - 1){
-            pos =  getVisibleCnt() - 1;
+        } else if (pos > getVisibleCount() - 1) {
+            pos = getVisibleCount() - 1;
         }
-        int cellx = getCellXByPos(pos);
+        int cellX = getCellXByPos(pos);
+        View dropTargetLayout = getChildAt(cellX);
 
+        long container = LauncherSettings.Favorites.CONTAINER_HOTSEAT;
         mDragViewVisualCenter = d.getVisualCenter(mDragViewVisualCenter);
-        mDropViewVisualCenter = getVisualCenter(cellx,mCurrentDropLayout.getWidth(),
-                mCurrentDropLayout.getHeight());
+        mDropViewVisualCenter = getVisualCenter(pos, dropTargetLayout.getWidth(),
+                dropTargetLayout.getHeight());
         float targetCellDistance = (float) Math.hypot(
-                mDragViewVisualCenter[0]- mDropViewVisualCenter[0],
+                mDragViewVisualCenter[0] - mDropViewVisualCenter[0],
                 mDragViewVisualCenter[1] - mDropViewVisualCenter[1]);
 
-        if(addToExistingFolderIfNecessary(mContentHotSeat,cellx,targetCellDistance,d)){
+        if (createUserFolderIfNecessary(/*d.dragView,*/ container,
+                mContentHotSeat, mTargetCell, targetCellDistance,
+                d.dragSource instanceof  Workspace, d, null)) {
+            return ;
+        }
+        if(addToExistingFolderIfNecessary(mContentHotSeat,cellX,targetCellDistance,
+                d.dragSource instanceof  Workspace, d)){
             return ;
         }
 
+        mWillSetDragViewVisible = true;
+
         ItemInfo dragInfo = (ItemInfo) d.dragInfo;
-        if (dragInfo == null || dragInfo.container == LauncherSettings.
-                Favorites.CONTAINER_HOTSEAT) {
-            isSwap = true;
-            return;
+
+        if (dropTargetLayout != null && dropTargetLayout.getVisibility() == VISIBLE){
+            dragInfo.cellX = getInVisibleViewPosition();
+        }else {
+            dragInfo.cellX = cellX;
         }
-        ItemInfo seatinfo = (ItemInfo) getChildAt(cellx).getTag();   // hotseat item
-        mDragInfo = seatinfo;
-        isSwap = true;
-        if (seatinfo != null) { // exchange item
-            isSwap = false;
-            mDragView = null;
-            mDragPos = -1;
-        }
-        LauncherModel.moveItemInDatabase(mLauncher, dragInfo,
-                LauncherSettings.Favorites.CONTAINER_HOTSEAT, HOTSEAT_SCREEN, cellx, 0);
+
         setSeat(dragInfo, true);
+
+        if (batchArrange){
+            final int basic = dragInfo.cellX;
+
+            for (int i=0; i< d.snapDragViews.size(); i++){
+                View dragView = d.snapDragViews.get(i).getView();
+                ItemInfo info = (ItemInfo) dragView.getTag();
+                if ((basic +i+1) >= getChildCount()){
+                    info.cellX = (basic + i +1) % 5;
+                }else {
+                    info.cellX = (basic +i+1);
+                }
+
+                if (d.snapDragViews.get(i).getType()
+                        == BatchArrangeDragView.BubbleTextViewType.HOTSEAT){
+                    dragView.setVisibility(INVISIBLE);
+                    removeView(dragView);
+                    addView(dragView, info.cellX);
+                }else {
+                    final int emptyPos = getEmptySeatPosition();
+                    if (emptyPos != -1){
+                        View emptyView = getChildAt(emptyPos);
+                        emptyView.setVisibility(View.INVISIBLE);
+                        removeView(emptyView);
+                        addView(emptyView, info.cellX);
+                        if (d.snapDragViews.get(i).getType()
+                                == BatchArrangeDragView.BubbleTextViewType.WORKSPACE){
+                            mLauncher.mWorkspace.getParentCellLayoutForView(dragView)
+                                    .removeView(dragView);
+                        }
+                    }
+                }
+                setSeat(info, true);
+            }
+        }
+        mLauncher.clearBatchArrangeApps();
     }
 
     public Hotseat(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         mLauncher = (Launcher) context;
         mHasVerticalHotseat = mLauncher.getDeviceProfile().isVerticalBarLayout();
+        mMinDistanceForSwapPosition = (float) mLauncher.getDeviceProfile().iconSizePx * 5/6;
+        mMaxDistanceForFolderCreation = (0.55f * mLauncher.getDeviceProfile().iconSizePx);
     }
 
     LinearLayout getLayout() {
@@ -367,7 +504,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                 ViewGroup.LayoutParams.MATCH_PARENT, 1.0f));
 
         LayoutTransition transition = new LayoutTransition();
-        transition.setAnimator(LayoutTransition.APPEARING,null);
+        transition.setAnimator(LayoutTransition.APPEARING, null);
         transition.setAnimator(LayoutTransition.DISAPPEARING, null);
         transition.setStagger(LayoutTransition.CHANGE_APPEARING, 0);
         transition.setStagger(LayoutTransition.CHANGE_DISAPPEARING, 0);
@@ -403,10 +540,10 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     @Override
     public void onDragEnter(DragObject dragObject) {
+        mCreateUserFolderOnDrop = false;
         mAddToExistingFolderOnDrop = false;
-        setCurrentDropTarget(null);
-        LinearLayout layout = getLayout();
-        setCurrentDropLayout(layout);
+        cleanupFolderCreation();
+        setCurrentDropOverCell(-1);
     }
 
     @Override
@@ -414,18 +551,23 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         mLauncher.getDragLayer().getDescendantRectRelativeToSelf(this, outRect);
     }
 
-    public void prepareAccessibilityDrop() {}
+    @Override
+    public void prepareAccessibilityDrop() {
+    }
 
     @Override
     public void onDragExit(DragObject dragObject) {
-        if (mDragMode == DRAG_MODE_ADD_TO_FOLDER) {
+        if (mDragMode == DRAG_MODE_CREATE_FOLDER) {
+            mCreateUserFolderOnDrop = true;
+        } else if (mDragMode == DRAG_MODE_ADD_TO_FOLDER) {
             mAddToExistingFolderOnDrop = true;
         }
-        setCurrentDropLayout(null);
+        cleanupFolderCreation();
+        setCurrentDropOverCell(-1);
     }
 
-    public void  setDragViewVisibility(boolean visible){
-        if(mDragView != null) {
+    public void setDragViewVisibility(boolean visible) {
+        if (mDragView != null) {
             if (visible) {
                 mDragView.setVisibility(View.VISIBLE);
             } else {
@@ -434,9 +576,30 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         }
     }
 
+    boolean willCreateUserFolder(ItemInfo info, Hotseat target, int targetCell, float
+            distance, boolean considerTimeout, DragObject d) {
+        if (distance > mMaxDistanceForFolderCreation) return false;
+        View dropOverView = target.getChildAt(targetCell);
+
+        boolean hasntMoved = false;
+        if (d.dragInfo != null) {
+            hasntMoved = dropOverView.getTag() == d.dragInfo;
+        }
+
+        if (dropOverView == null || hasntMoved || (considerTimeout && !mCreateUserFolderOnDrop)) {
+            return false;
+        }
+        boolean aboveShortcut = (dropOverView.getTag() instanceof ShortcutInfo);
+        boolean willBecomeShortcut =
+                (info.itemType == LauncherSettings.Favorites.ITEM_TYPE_APPLICATION ||
+                        info.itemType == LauncherSettings.Favorites.ITEM_TYPE_SHORTCUT);
+
+        return (aboveShortcut && willBecomeShortcut);
+    }
+
     boolean willAddToExistingUserFolder(Object dragInfo, Hotseat target, int targetCell,
                                         float distance) {
-        if (distance > mLauncher.getWorkspace().mMaxDistanceForFolderCreation) return false;
+        if (distance > mMaxDistanceForFolderCreation) return false;
         View dropOverView = target.getChildAt(targetCell);
 
         if (dropOverView instanceof FolderIcon) {
@@ -450,7 +613,26 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     private void manageFolderFeedback(ItemInfo info, Hotseat targetLayout,
                                       int targetCell, float distance,
-                                      View dragOverView, boolean accessibleDrag) {
+                                      View dragOverView, boolean accessibleDrag,
+                                      DragObject d) {
+
+        boolean userFolderPending = willCreateUserFolder(info, targetLayout, targetCell,
+                distance, false, d);
+        if (mDragMode == DRAG_MODE_NONE && userFolderPending &&
+                !mFolderCreationAlarm.alarmPending()) {
+            FolderCreationAlarmListener listener = new
+                    FolderCreationAlarmListener(targetLayout, targetCell, 0);
+
+            if (!accessibleDrag) {
+                mFolderCreationAlarm.setOnAlarmListener(listener);
+                mFolderCreationAlarm.setAlarm(FOLDER_CREATION_TIMEOUT);
+            } else {
+                listener.onAlarm(mFolderCreationAlarm);
+            }
+            return;
+        }
+
+
         boolean willAddToFolder =
                 willAddToExistingUserFolder(info, targetLayout, targetCell, distance);
 
@@ -466,23 +648,66 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         if (mDragMode == DRAG_MODE_ADD_TO_FOLDER && !willAddToFolder) {
             setDragMode(DRAG_MODE_NONE);
         }
+        if (mDragMode == DRAG_MODE_CREATE_FOLDER && !userFolderPending) {
+            setDragMode(DRAG_MODE_NONE);
+        }
 
         return;
     }
+
+    @Override
+    public void onUninstallActivityReturned(boolean success) {
+        mDeferDropAfterUninstall = false;
+        mUninstallSuccessful = success;
+        if (mDeferredAction != null) {
+            mDeferredAction.run();
+        }
+    }
+
+    @Override
+    public void deferCompleteDropAfterUninstallActivity() {
+        mDeferDropAfterUninstall = true;
+    }
+
+    class FolderCreationAlarmListener implements OnAlarmListener {
+        Hotseat layout;
+        int cellX;
+        int cellY;
+
+        public FolderCreationAlarmListener(Hotseat layout, int cellX, int cellY) {
+            this.layout = layout;
+            this.cellX = cellX;
+            this.cellY = cellY;
+        }
+
+        public void onAlarm(Alarm alarm) {
+            if (mDragFolderRingAnimator != null) {
+                // This shouldn't happen ever, but just in case, make sure we clean up the mess.
+                mDragFolderRingAnimator.animateToNaturalState(false);
+            }
+            mDragFolderRingAnimator = new FolderIcon.FolderRingAnimator(mLauncher, null);
+            mDragFolderRingAnimator.setCell(cellX, cellY);
+            mDragFolderRingAnimator.setHotseat(layout);
+            mDragFolderRingAnimator.animateToAcceptState(true);
+            layout.showFolderAccept(mDragFolderRingAnimator);
+            setDragMode(DRAG_MODE_CREATE_FOLDER);
+        }
+    }
+
 
     public final float[] getVisualCenter(int cellX,float toViewWidth,float toViewHeight) {
         final float res[] = new float[2];
         WindowManager wm = (WindowManager) getContext()
                 .getSystemService(Context.WINDOW_SERVICE);
         // In order to find the visual center, we shift by half the dragRect
-        res[0] = getPaddingLeft() + toViewWidth * cellX +toViewWidth/2;
-        res[1] = toViewHeight/2;
-
+        if (isLand()){
+            res[0] = getPaddingLeft() + toViewWidth / 2;
+            res[1] = getPaddingTop() + toViewHeight * cellX + toViewHeight / 2;
+        }else {
+            res[0] = getPaddingLeft() + toViewWidth * cellX + toViewWidth / 2;
+            res[1] = getPaddingTop() + toViewHeight / 2;
+        }
         return res;
-    }
-
-    private  void  setCurrentDropTarget(View dropTargetLayout){
-        mCurrentDropLayout = dropTargetLayout;
     }
 
     /**
@@ -498,87 +723,54 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     @Override
     public void onDragOver(final DragObject d) {
-        int pos ;
-        if(isLand()){
-            pos = d.y / mItemHeight;
-        }else {
-            pos = d.x / mItemWidth;
-        }
+        int pos = isLand() ? d.y / mItemHeight : d.x / mItemWidth;
         int cellX = getCellXByPos(pos);
         View toView = getChildAt(cellX);
-        setCurrentDropTarget(toView);
 
-        if(toView != null && toView.getVisibility() == View.VISIBLE) {
+        if (toView != null && toView.getVisibility() == View.VISIBLE ) {
             ItemInfo itemInfo = (ItemInfo) d.dragInfo;
             Hotseat mDragTargetLayout = mContentHotSeat;
             mDragViewVisualCenter = d.getVisualCenter(mDragViewVisualCenter);
-            mDropViewVisualCenter = getVisualCenter(cellX, toView.getWidth(), toView.getHeight());
+            mDropViewVisualCenter = getVisualCenter(pos, toView.getWidth(), toView.getHeight());
             float targetCellDistance = (float) Math.hypot(
                     mDragViewVisualCenter[0] - mDropViewVisualCenter[0],
                     mDragViewVisualCenter[1] - mDropViewVisualCenter[1]);
-            mLauncher.getWorkspace().mapPointFromSelfToHotseatLayout(mLauncher.getHotseat(),
-                    mDragViewVisualCenter);
             mTargetCell = cellX;
             setCurrentDropOverCell(mTargetCell);
             manageFolderFeedback(itemInfo, mDragTargetLayout, mTargetCell,
-                    targetCellDistance, toView, d.accessibleDrag);
-        }
-        if(toView instanceof FolderIcon){
-            dropTargetIsFolder = true;
-        }
-
-        final int emptyPos = getEmptySeatPos();
-        if (mDragView == null && emptyPos == -1){
-            return;
-        }
-        if(emptyPos != -1 && mDragFromWorkspace){
-            View emptyView = null;
-            emptyView = getChildAt(emptyPos);
-            emptyView.setVisibility(View.INVISIBLE);
-            if (isLand()) {
-                updateItemValidHeight();
-                mDragPos = d.y / mItemHeight;
-            } else {
-                updateItemValidWidth();
-                mDragPos = d.x / mItemWidth;
-            }
-
-            int vericellx = getCellXByPos(mDragPos);
-            if (vericellx < getChildCount()) {
-                removeView(emptyView);
-                addView(emptyView, vericellx);
-            }
-            if(mDragView != null) {
-                ItemInfo info = (ItemInfo) mDragView.getTag();
-                if(null != info){
-                    info.cellX = vericellx;
-                    View view = setSeat(info, false);
-                    mDragView = view;
-                    mDragFromWorkspace = false;
-                    return;
+                    targetCellDistance, toView, d.accessibleDrag, d);
+            boolean dropInTargetArea = targetCellDistance < mMinDistanceForSwapPosition;
+            if (mDragMode == DRAG_MODE_NONE && haveEnoughSpace(d)){
+                if (!dropInTargetArea && !mDragFromExternal){
+                    mReorderAlarm.cancelAlarm();
+                }else {
+                    // Otherwise, if we aren't adding to or creating a folder and there's no pending
+                    // reorder, then we schedule a reorder
+                    if (!mReorderAlarm.alarmPending() && !mLastDropInTargetArea){
+                        listener = new ReorderAlarmListener(d);
+                        mReorderAlarm.setOnAlarmListener(listener);
+                        mReorderAlarm.setAlarm(REORDER_TIMEOUT);
+                    }
                 }
             }
-
-            mDragView = emptyView;
-            mDragFromWorkspace = false;
-            return;
+            mLastDropInTargetArea = dropInTargetArea;
+        }else {
+            mLastDropInTargetArea = false;
+            if (mDragMode != DRAG_MODE_NONE && haveEnoughSpace(d)){
+                listener = new ReorderAlarmListener(d);
+                mReorderAlarm.setOnAlarmListener(listener);
+                mReorderAlarm.setAlarm(0);
+                setDragMode(DRAG_MODE_NONE);
+            }
         }
 
-        int dragPos = mDragPos;
-        if (dragPos == pos || cellX > MAX_HOTSEAT - 1) {
-            return;
+        if ( mDragMode == DRAG_MODE_ADD_TO_FOLDER || mDragMode == DRAG_MODE_CREATE_FOLDER){
+            mReorderAlarm.cancelAlarm();
         }
-        View dragView = mDragView;
-        int idx = getCellXByPos(dragPos);
-        if (idx > getChildCount() - 1) {
-            return;
-        }
-        removeViewAt(idx);
-        if (dragView.getParent() != null) {
-            removeView(dragView);
-        }
-        addView(dragView, cellX);
-        mDragPos = pos;
+    }
+
+    public void updateDragFromExternal(boolean dragFromExternal){
+        mDragFromExternal =  dragFromExternal;
     }
 
     public boolean isDropEnabled() {
@@ -587,38 +779,37 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     @Override
     public boolean acceptDrop(DragObject d) {
-        ItemInfo iteminfo = (ItemInfo)d.dragInfo;
+        ItemInfo iteminfo = (ItemInfo) d.dragInfo;
         d.deferDragViewCleanupPostAnimation = false;
-        int pos ;
-        if(isLand()){
-            pos = d.y / mItemHeight;
-        }else {
-            pos = d.x / mItemWidth;
-        }
+        int pos = isLand() ? d.y / mItemHeight : d.x / mItemWidth;
         int cellX = getCellXByPos(pos);
-        View dropTargetLayout = mCurrentDropLayout;
-        if(dropTargetLayout == null){
-            return  false;
+        View dropTargetLayout = getChildAt(cellX);
+        if (dropTargetLayout == null){
+            return false;
         }
         mDragViewVisualCenter = d.getVisualCenter(mDragViewVisualCenter);
-        mDropViewVisualCenter = getVisualCenter(cellX,dropTargetLayout.getWidth(),
+        mDropViewVisualCenter = getVisualCenter(pos, dropTargetLayout.getWidth(),
                 dropTargetLayout.getHeight());
         float targetCellDistance = (float) Math.hypot(mDragViewVisualCenter[0]
-                - mDropViewVisualCenter[0],
+                        - mDropViewVisualCenter[0],
                 mDragViewVisualCenter[1] - mDropViewVisualCenter[1]);
+        if (mCreateUserFolderOnDrop && willCreateUserFolder((ItemInfo) d.dragInfo,
+                mContentHotSeat, mTargetCell, targetCellDistance, true, d)) {
+            return true;
+        }
         if(mAddToExistingFolderOnDrop && willAddToExistingUserFolder(iteminfo,
                 mContentHotSeat,cellX,targetCellDistance)){
             return true;
         }
 
-        if(iteminfo.itemType == LauncherSettings.Favorites.ITEM_TYPE_FOLDER &&
-                getShortcutAdded() < MAX_HOTSEAT){
-            return  true;
+        if (iteminfo.itemType == LauncherSettings.Favorites.ITEM_TYPE_FOLDER
+                && haveEnoughSpace(d)) {
+            return true;
         }
 
         if (iteminfo.itemType != LauncherSettings.Favorites.ITEM_TYPE_APPWIDGET
                 && iteminfo.itemType != LauncherSettings.Favorites.ITEM_TYPE_FOLDER
-                && getShortcutAdded() < MAX_HOTSEAT) {
+                && haveEnoughSpace(d)) {
             return true;
         } else {
             d.cancelled = true;
@@ -631,20 +822,21 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         mLauncher.getDragLayer().getLocationInDragLayer(this, loc);
     }
 
-    @Override
-    public void onDropCompleted(View target, DragObject d, boolean isFlingToDelete,
-                boolean success) {
-        // if swap items in hotseat, dragview should be visible
-        bSuccess = success;
-        if (target instanceof DeleteDropTarget
-                && ((ItemInfo) d.dragInfo).itemType == LauncherSettings.
-                Favorites.ITEM_TYPE_APPLICATION) {
-            bUninstall = true;
+    /**
+     * Called at the end of a drag which originated on the hotseat.
+     */
+    public void onDropCompleted(final View target, final DragObject d,
+            final boolean isFlingToDelete, final boolean success) {
+        if (mDeferDropAfterUninstall) {
+            mDeferredAction = new Runnable() {
+                public void run() {
+                    onDropCompleted(target, d, isFlingToDelete, success);
+                    mDeferredAction = null;
+                }
+            };
+            return;
         }
-        if(target instanceof InfoDropTarget){
-            mDropTargetIsInfoDrop = true;
-        }
-        if (isSwap || !success || bUninstall || mDropTargetIsInfoDrop) {
+        if (mWillSetDragViewVisible || !success || target instanceof InfoDropTarget) {
             if (mDragView != null) {
                 mDragView.setVisibility(View.VISIBLE);
             }
@@ -653,23 +845,37 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                 mDragView.setVisibility(View.GONE);
             }
         }
+
+        boolean beingCalledAfterUninstall = mDeferredAction != null;
+        if ((d.cancelled || (beingCalledAfterUninstall && !mUninstallSuccessful))
+                && mDragView != null) {
+            mDragView.setVisibility(VISIBLE);
+        }
+
+        mLauncher.mWorkspace.onDropChilds(d, success);
+        if (beingCalledAfterUninstall){
+            updateDockItems();
+            resetState();
+        }
     }
 
-    public void startDrag(View view){
-        ItemInfo info = (ItemInfo) view.getTag();
-        mDragView = view;
+    public void startDrag(CellLayout.CellInfo cellInfo) {
+        mDragView = cellInfo.cell;
+
+        // Make sure the drag was started by a long press as opposed to a long click.
+        if (!mDragView.isInTouchMode()) {
+            return;
+        }
+        mDragView.setVisibility(View.INVISIBLE);
+        mDragView.clearFocus();
         mDragView.setPressed(false);
-        mDragPos = getDragPosBycellX(info.cellX);
-        mLauncher.getWorkspace().beginDragShared(view, this, false);
-        view.setVisibility(View.INVISIBLE);
+        mDragPos = getDragPosByCellX(cellInfo.cellX);
+        mLauncher.getWorkspace().beginDragShared(mDragView, this, false);
     }
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if (ev.getPointerCount() > 1) {
-            return true;
-        }
-        return super.onInterceptTouchEvent(ev);
+        return ev.getPointerCount() > 1 || super.onInterceptTouchEvent(ev);
     }
 
     @Override
@@ -678,7 +884,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     @Override
     public void onDragStart(DragSource source, Object info, int dragAction) {
-        mLauncher.getWorkspace().onDragStart(source,info,dragAction);
+        mLauncher.getWorkspace().onDragStart(source, info, dragAction);
     }
 
     @Override
@@ -687,7 +893,8 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     }
 
     @Override
-    public void onFlingToDelete(DragObject dragObject, PointF vec) {}
+    public void onFlingToDelete(DragObject dragObject, PointF vec) {
+    }
 
     @Override
     public float getIntrinsicIconScaleFactor() {
@@ -696,18 +903,20 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     @Override
     public void onDragEnd() {
-        if (mDragView == null) {
-            return;
+        if (mDragView != null && !mDeferDropAfterUninstall) {
+            updateDockItems();
+            resetState();
         }
-        ItemInfo fromInfo = (ItemInfo) mDragInfo;
-        if (fromInfo == null && !isSwap && bSuccess && !bUninstall && !mDropTargetIsInfoDrop) {
-            mDragView.setVisibility(View.GONE);
-            mDragView.setTag(null);
-        }
-        bSuccess = true;
-        isSwap = false;
-        mDropTargetIsInfoDrop = false;
+    }
 
+    private void resetState(){
+        mDragView = null;
+        mLastDropInTargetArea = false;
+        mWillSetDragViewVisible = false;
+        mDragPos = -1;
+    }
+
+    private void updateDockItems(){
         for (int i = 0; i < MAX_HOTSEAT; i++) {
             View child = getChildAt(i);
             if (child == null || child.getTag() == null) {
@@ -722,10 +931,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             LauncherModel.addOrMoveItemInDatabase(mLauncher, info, LauncherSettings.
                     Favorites.CONTAINER_HOTSEAT, HOTSEAT_SCREEN, i, 0);
         }
-        bUninstall = false;
-        mDragPos = -1;
-        mDragInfo = null;
-        mDragView = null;
     }
 
     @Override
@@ -743,7 +948,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         return false;
     }
 
-    private int getEmptySeatPos() {
+    private int getEmptySeatPosition() {
         int result = -1;
         for (int i = 0; i < MAX_HOTSEAT; i++) {
             View v = getChildAt(i);
@@ -755,11 +960,26 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         return result;
     }
 
-    private int getVisibleCnt() {
+    private boolean haveEnoughSpace(DragObject d){
+        int count = d.snapDragViews.size() + 1 ;
+        return count <= MAX_HOTSEAT - getShortcutAdded();
+    }
+
+    private int getInVisibleViewPosition(){
+        for (int i=0;i<MAX_HOTSEAT;i++){
+            View v = getChildAt(i);
+            if (v.getVisibility() == INVISIBLE){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int getVisibleCount() {
         int result = 0;
         for (int i = 0; i < MAX_HOTSEAT; i++) {
             View v = getChildAt(i);
-            if(v == null){
+            if (v == null) {
             }
             if (v != null && v.getVisibility() != GONE) {
                 result++;
@@ -768,18 +988,18 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         return result;
     }
 
-    private int getShortcutAdded(){
+    private int getShortcutAdded() {
         int result = 0;
         for (int i = 0; i < MAX_HOTSEAT; i++) {
             View v = getChildAt(i);
-                if (v != null && v.getVisibility() != GONE && v.getTag() != null) {
+            if (v != null && v.getVisibility() == VISIBLE && v.getTag() != null) {
                 result++;
             }
         }
         return result;
     }
 
-    private int getDragPosBycellX(int cellX) {
+    private int getDragPosByCellX(int cellX) {
         int result = 0;
         for (int i = 0; i < MAX_HOTSEAT; i++) {
             if (i == cellX) {
@@ -812,8 +1032,18 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         return i;
     }
 
+    private boolean haveInVisibleViews(){
+        for (int i=0;i<MAX_HOTSEAT;i++){
+            View v = getChildAt(i);
+            if (v.getVisibility() == INVISIBLE){
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void updateItemValidWidth() {
-        int cnt = getVisibleCnt();
+        int cnt = getVisibleCount();
         if (cnt != 0) {
             mItemWidth = (getMeasuredWidth() - getPaddingLeft() - getPaddingRight()) / cnt;
         } else {
@@ -822,7 +1052,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     }
 
     private void updateItemValidHeight() {
-        int cnt = getVisibleCnt();
+        int cnt = getVisibleCount();
         if (cnt != 0) {
             mItemHeight = (getMeasuredHeight() - getPaddingTop() - getPaddingBottom()) / cnt;
         } else {
@@ -830,4 +1060,46 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         }
     }
 
+    class ReorderAlarmListener implements OnAlarmListener {
+        final DragObject d;
+
+        public ReorderAlarmListener(DragObject d) {
+            this.d = d;
+        }
+
+        public void onAlarm(Alarm alarm) {
+            final int emptyPos = getEmptySeatPosition();
+            if (emptyPos != -1 && mDragFromExternal && !haveInVisibleViews()) {
+                View emptyView = getChildAt(emptyPos);
+                emptyView.setVisibility(View.INVISIBLE);
+                if (isLand()) {
+                    updateItemValidHeight();
+                    mDragPos = d.y / mItemHeight;
+                } else {
+                    updateItemValidWidth();
+                    mDragPos = d.x / mItemWidth;
+                }
+                int vericellx = getCellXByPos(mDragPos);
+                if (vericellx < getChildCount()) {
+                    removeView(emptyView);
+                    addView(emptyView, vericellx);
+                }
+                mDragView = emptyView;
+                updateDragFromExternal(false);
+            }else {
+                int pos = isLand() ? d.y / mItemHeight : d.x / mItemWidth;
+                int cellX = getCellXByPos(pos);
+                if (mDragPos != pos && cellX < getChildCount()) {
+                    int idx = getCellXByPos(mDragPos);
+                    if (idx > getChildCount() - 1) {
+                        return;
+                    }
+                    View dragView = getChildAt(idx);
+                    removeViewAt(idx);
+                    addView(dragView, cellX);
+                    mDragPos = pos;
+                }
+            }
+        }
+    }
 }

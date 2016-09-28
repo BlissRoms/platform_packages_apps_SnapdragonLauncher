@@ -2472,7 +2472,7 @@ public class Launcher extends Activity
         }
     }
 
-    FolderIcon addFolder(CellLayout layout, long container, final long screenId, int cellX,
+    FolderIcon addFolder(ViewGroup layout, long container, final long screenId, int cellX,
             int cellY) {
         final FolderInfo folderInfo = new FolderInfo();
         folderInfo.title = getText(R.string.folder_name);
@@ -2485,11 +2485,15 @@ public class Launcher extends Activity
         // Create the view
         FolderIcon newFolder =
             FolderIcon.fromXml(R.layout.folder_icon, this, layout, folderInfo, mIconCache);
-        mWorkspace.addInScreen(newFolder, container, screenId, cellX, cellY, 1, 1,
-                isWorkspaceLocked());
-        // Force measure the new folder icon
-        CellLayout parent = mWorkspace.getParentCellLayoutForView(newFolder);
-        parent.getShortcutsAndWidgets().measureChild(newFolder);
+        if (layout instanceof Hotseat) {
+            mHotseat.createNewFolderSeat(newFolder, cellX);
+        } else {
+            mWorkspace.addInScreen(newFolder, container, screenId, cellX, cellY, 1, 1,
+                    isWorkspaceLocked());
+            // Force measure the new folder icon
+            CellLayout parent = mWorkspace.getParentCellLayoutForView(newFolder);
+            parent.getShortcutsAndWidgets().measureChild(newFolder);
+        }
         return newFolder;
     }
 
@@ -3387,7 +3391,7 @@ public class Launcher extends Activity
                     // User long pressed on an item
                     if (supportDrag(itemUnderLongClick)){
                         if (isHotseatItem(itemUnderLongClick)){
-                            mHotseat.startDrag(itemUnderLongClick);
+                            mHotseat.startDrag(longClickCellInfo);
                         }else {
                             mWorkspace.startDrag(longClickCellInfo);
                         }
