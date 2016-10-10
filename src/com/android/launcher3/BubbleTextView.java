@@ -328,13 +328,8 @@ public class BubbleTextView extends TextView
                 if (!mStylusEventHelper.inStylusButtonPressed()) {
                     mLongPressHelper.postCheckForLongPress();
                 }
-                if (mLauncher.getWorkspace().getState() == Workspace.State.NORMAL
-                        && !isLand()
-                        && getTag() instanceof ShortcutInfo){
-                    ShortcutInfo info = (ShortcutInfo)getTag();
-                    if (info.getTargetComponent() != null) {
-                        mLongPressHelper.postCheckForLongPressToArrange();
-                    }
+                if (supportSwitchToArrangeMode()){
+                    mLongPressHelper.postCheckForLongPressToArrange();
                 }
 
                 break;
@@ -357,6 +352,18 @@ public class BubbleTextView extends TextView
                 break;
         }
         return result;
+    }
+
+    boolean supportSwitchToArrangeMode(){
+        if (mLauncher.getWorkspace().getState() == Workspace.State.NORMAL
+                && !isLand()
+                && getTag() instanceof ShortcutInfo){
+            ShortcutInfo info = (ShortcutInfo)getTag();
+            if (info.getTargetComponent() != null) {
+                return true;
+            }
+        }
+        return false;
     }
 
     void setStayPressed(boolean stayPressed) {
