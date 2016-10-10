@@ -943,7 +943,8 @@ public class Launcher extends Activity
             int[] grantResults) {
         switch (requestCode) {
             case REQUEST_CODE_ASK_PERMISSIONS:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     // Permission Granted
                     try {
                         startActivity(mPermissionView, mPermissionIntent, mPermissionTag);
@@ -3451,6 +3452,7 @@ public class Launcher extends Activity
             ((BubbleTextView)view).startSelectOrCancelAnimation(false);
         }
         mArrangeShortcuts.clear();
+        mArrangeShortcutsFinal.clear();
     }
 
     private void updateBatchArrangeAppsState(View itemUnderLongClick){
@@ -3459,7 +3461,7 @@ public class Launcher extends Activity
             mArrangeShortcuts.remove(info.getTargetComponent());
             ((BubbleTextView)itemUnderLongClick).startSelectOrCancelAnimation(false);
         }else {
-            if (mArrangeShortcuts.size() >= 5)return ;
+            if (mArrangeShortcuts.size() >= 5 || info.getTargetComponent() == null) return;
             mArrangeShortcuts.put(info.getTargetComponent(), itemUnderLongClick);
             ((BubbleTextView)itemUnderLongClick).startSelectOrCancelAnimation(true);
         }
@@ -3573,7 +3575,6 @@ public class Launcher extends Activity
             mStateTransitionAnimation.startAnimationToWorkspace(mState, mWorkspace.getState(),
                     Workspace.State.NORMAL, snapToPage, animated, onCompleteRunnable);
             clearBatchArrangeApps();
-            mDragController.cancelDrag();
             // Set focus to the AppsCustomize button
             if (mAllAppsButton != null) {
                 mAllAppsButton.requestFocus();
