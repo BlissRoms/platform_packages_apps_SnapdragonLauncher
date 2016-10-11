@@ -703,6 +703,7 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
         oa.setDuration(mExpandDuration);
         setLayerType(LAYER_TYPE_HARDWARE, null);
         oa.start();
+        mFolderIcon.updateLeftCornerNum();
     }
 
     public boolean acceptDrop(DragObject d) {
@@ -735,7 +736,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
 
     @Override
     public void onDragOver(DragObject d) {
-        if (d.snapDragViews != null && d.snapDragViews.size() >0 ){
+        if (d.snapDragViews != null
+                && mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE ){
             completeDragExit();
             return;
         }
@@ -1232,8 +1234,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
             }
         };
         View finalChild = mContent.getLastItem();
-        ShortcutInfo shortcutInfo = (ShortcutInfo) finalChild.getTag();
         if (finalChild != null) {
+            ShortcutInfo shortcutInfo = (ShortcutInfo) finalChild.getTag();
             mFolderIcon.performDestroyAnimation(finalChild, onCompleteRunnable, shortcutInfo);
         } else {
             onCompleteRunnable.run();
@@ -1367,10 +1369,14 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
         // If the item was dropped onto this open folder, we have done the work associated
         // with adding the item to the folder, as indicated by mSuppressOnAdd being set
         if (mSuppressOnAdd) return;
-        mContent.createAndAddViewForRank(item, mContent.allocateRankForNewItem(item));
+        View icon = mContent.createAndAddViewForRank(item, mContent.allocateRankForNewItem(item));
         mItemsInvalidated = true;
         LauncherModel.addOrMoveItemInDatabase(
                 mLauncher, item, mInfo.id, 0, item.cellX, item.cellY);
+
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE){
+            mLauncher.updateBatchArrangeApps(icon);
+        }
     }
 
     public void onRemove(ShortcutInfo item) {

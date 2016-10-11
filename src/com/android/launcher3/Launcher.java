@@ -89,6 +89,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewStub;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -3450,6 +3451,11 @@ public class Launcher extends Activity
     public void clearBatchArrangeApps(){
         for (View view: mArrangeShortcuts.values()){
             ((BubbleTextView)view).startSelectOrCancelAnimation(false);
+            ViewParent parent = view.getParent().getParent().getParent();
+            if (parent instanceof FolderPagedView){
+                FolderPagedView pagedView = (FolderPagedView) parent;
+                pagedView.getFolder().mFolderIcon.clearLeftCornerNum();
+            }
         }
         mArrangeShortcuts.clear();
         mArrangeShortcutsFinal.clear();

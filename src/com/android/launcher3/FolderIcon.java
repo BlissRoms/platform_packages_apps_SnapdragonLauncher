@@ -26,8 +26,10 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Looper;
@@ -137,6 +139,11 @@ public class FolderIcon extends FrameLayout implements FolderListener {
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 
+    private Paint mCirclePaint;
+    private Paint mNumberPaint;
+    private int mLeftCornerRadius;
+    private int mLeftCornerNum = 0;
+
     private CharSequence getExceedText() {
         return sExceedString;
     }
@@ -163,6 +170,27 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         mLongPressHelper = new CheckLongPressHelper(this);
         mStylusEventHelper = new StylusEventHelper(this);
         setAccessibilityDelegate(LauncherAppState.getInstance().getAccessibilityDelegate());
+        initBatchArrangeParams();
+    }
+
+    private void initBatchArrangeParams(){
+        mCirclePaint = new Paint();
+        mCirclePaint.setAntiAlias(true);
+        mCirclePaint.setStyle(Paint.Style.FILL);
+        mCirclePaint.setColor(Color.WHITE);
+
+        mNumberPaint = new Paint();
+        mNumberPaint.setAntiAlias(true);
+        mNumberPaint.setColor(getResources().
+                getColor(R.color.default_arrange_select_number_color));
+        mNumberPaint.setTypeface(Typeface.SANS_SERIF);
+        int numberTextSize = getResources().
+                getDimensionPixelSize(R.dimen.default_arrange_select_number_textsize);
+        mNumberPaint.setTextSize(numberTextSize);
+
+
+        mLeftCornerRadius = getResources().
+                getDimensionPixelSize(R.dimen.default_arrange_select_circle_radius);
     }
 
     public boolean isDropEnabled() {
@@ -765,6 +793,42 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         } else {
             drawPreviewItem(canvas, mAnimParams);
         }
+        drawLeftCorner(canvas);
+    }
+
+    public void updateLeftCornerNum(){
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE ){
+            mLeftCornerNum = 0;
+            for (ShortcutInfo info: mInfo.contents){
+                if (mLauncher.getBatchArrangeAppsAll().containsKey(info.getTargetComponent())){
+                    mLeftCornerNum ++;
+                }
+            }
+        }
+        invalidate();
+    }
+
+    public void clearLeftCornerNum(){
+        mLeftCornerNum = 0;
+        invalidate();
+    }
+
+    private void drawLeftCorner(Canvas canvas){
+        if(mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE ) {
+            if (mLeftCornerNum > 0){
+                int l = mPreviewBackground.getLeft();
+                int t = mPreviewBackground.getTop() < 0 ? 0 : mPreviewBackground.getTop() * 2;
+                canvas.drawCircle(l + mLeftCornerRadius, t + mLeftCornerRadius,
+                        mLeftCornerRadius, mCirclePaint);
+                String text = String.valueOf(mLeftCornerNum);
+                int textWidth = (int)(mNumberPaint.measureText(text));
+                Rect textBounds = new Rect();
+                mNumberPaint.getTextBounds(text, 0, text.length(), textBounds);
+                int textHeight = textBounds.height();
+                canvas.drawText(text, l + mLeftCornerRadius - textWidth / 2,
+                        t + mLeftCornerRadius + textHeight / 2, mNumberPaint);
+            }
+        }
     }
 
     private Drawable getTopDrawable(TextView v) {
@@ -860,12 +924,14 @@ public class FolderIcon extends FrameLayout implements FolderListener {
 
     public void onAdd(ShortcutInfo item) {
         updateFolderUnreadNum();
+        updateLeftCornerNum();
         invalidate();
         requestLayout();
     }
 
     public void onRemove(ShortcutInfo item) {
         updateFolderUnreadNum();
+        updateLeftCornerNum();
         invalidate();
         requestLayout();
     }
