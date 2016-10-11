@@ -700,12 +700,11 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         canvas.translate(params.transX + mPreviewOffsetX, params.transY + mPreviewOffsetY);
         canvas.scale(params.scale, params.scale);
         Drawable d = params.drawable;
-        ShortcutInfo shortcutInfo = params.info;
-
-        Bitmap bitmap = mLauncher.mIconCache.getEntryForPackageLocked(shortcutInfo.getIntent().
-                getComponent().getPackageName(), shortcutInfo.user, false).icon;
-        if (LauncherAppState.getInstance().getModel().getUnreadMap()
-                .containsKey(shortcutInfo.getIntent().getComponent())) {
+        if (params.info.getIntent().getComponent() != null
+                && LauncherAppState.getInstance().getModel().getUnreadMap()
+                .containsKey(params.info.getIntent().getComponent())) {
+            Bitmap bitmap = mLauncher.mIconCache.getEntryForPackageLocked(params.info.
+                    getIntent().getComponent().getPackageName(), params.info.user, false).icon;
             d = new BitmapDrawable(bitmap);
         }
 
