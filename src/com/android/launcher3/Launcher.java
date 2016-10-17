@@ -89,6 +89,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.ViewStub;
 import android.view.ViewTreeObserver;
 import android.view.Window;
@@ -2471,7 +2472,7 @@ public class Launcher extends Activity
         }
     }
 
-    FolderIcon addFolder(CellLayout layout, long container, final long screenId, int cellX,
+    FolderIcon addFolder(ViewGroup layout, long container, final long screenId, int cellX,
             int cellY) {
         final FolderInfo folderInfo = new FolderInfo();
         folderInfo.title = getText(R.string.folder_name);
@@ -2484,11 +2485,15 @@ public class Launcher extends Activity
         // Create the view
         FolderIcon newFolder =
             FolderIcon.fromXml(R.layout.folder_icon, this, layout, folderInfo, mIconCache);
-        mWorkspace.addInScreen(newFolder, container, screenId, cellX, cellY, 1, 1,
-                isWorkspaceLocked());
-        // Force measure the new folder icon
-        CellLayout parent = mWorkspace.getParentCellLayoutForView(newFolder);
-        parent.getShortcutsAndWidgets().measureChild(newFolder);
+        if (layout instanceof Hotseat) {
+            mHotseat.createNewFolderSeat(newFolder, cellX);
+        } else {
+            mWorkspace.addInScreen(newFolder, container, screenId, cellX, cellY, 1, 1,
+                    isWorkspaceLocked());
+            // Force measure the new folder icon
+            CellLayout parent = mWorkspace.getParentCellLayoutForView(newFolder);
+            parent.getShortcutsAndWidgets().measureChild(newFolder);
+        }
         return newFolder;
     }
 
@@ -3386,7 +3391,7 @@ public class Launcher extends Activity
                     // User long pressed on an item
                     if (supportDrag(itemUnderLongClick)){
                         if (isHotseatItem(itemUnderLongClick)){
-                            mHotseat.startDrag(itemUnderLongClick);
+                            mHotseat.startDrag(longClickCellInfo);
                         }else {
                             mWorkspace.startDrag(longClickCellInfo);
                         }
@@ -3450,6 +3455,11 @@ public class Launcher extends Activity
     public void clearBatchArrangeApps(){
         for (View view: mArrangeShortcuts.values()){
             ((BubbleTextView)view).startSelectOrCancelAnimation(false);
+            ViewParent parent = view.getParent().getParent().getParent();
+            if (parent instanceof FolderPagedView){
+                FolderPagedView pagedView = (FolderPagedView) parent;
+                pagedView.getFolder().mFolderIcon.clearLeftCornerNum();
+            }
         }
         mArrangeShortcuts.clear();
         mArrangeShortcutsFinal.clear();

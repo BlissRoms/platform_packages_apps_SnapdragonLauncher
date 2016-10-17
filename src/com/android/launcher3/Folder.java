@@ -30,6 +30,8 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.InputType;
 import android.text.Selection;
 import android.text.Spannable;
@@ -159,8 +161,28 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     // Folder scrolling
     private int mScrollAreaOffset;
 
+    //For Batch Arrange Apps
+    private static final int SWITCH_TO_ARRANGE_MODE = 0x1000;
+    private boolean mSwitchingWorkspaceMode = false;
+
     @Thunk int mScrollHintDir = DragController.SCROLL_NONE;
     @Thunk int mCurrentScrollDir = DragController.SCROLL_NONE;
+
+    private final Handler mHandler =  new Handler(){
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what){
+                case SWITCH_TO_ARRANGE_MODE:
+                    if (mDragController.isDragging()){
+                        mSwitchingWorkspaceMode = true;
+                        mLauncher.changeWorkModeToArrange((View) msg.obj);
+                        mSwitchingWorkspaceMode = false;
+                    }
+                    break;
+            }
+        }
+    };
 
     /**
      * Used to inflate the Workspace from XML.
@@ -250,13 +272,27 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
         }
     }
 
+    private void delaySwitch(View v){
+        if (v instanceof BubbleTextView
+                && ((BubbleTextView)v).supportSwitchToArrangeMode()){
+            Message message = mHandler.obtainMessage();
+            message.what = SWITCH_TO_ARRANGE_MODE;
+            message.obj = v;
+            mHandler.removeMessages(SWITCH_TO_ARRANGE_MODE);
+            mHandler.sendMessageDelayed(message, 700);
+        }
+    }
+
+    void cancelDelaySwitch(){
+        mHandler.removeMessages(SWITCH_TO_ARRANGE_MODE);
+    }
+
     public boolean onLongClick(View v) {
         // Return if global dragging is not enabled
         if (!mLauncher.isDraggingEnabled()) return true;
-        if (mDragController.isDragging()){
-            mLauncher.changeWorkModeToArrange(v);
-            return true;
-        }
+
+        delaySwitch(v);
+
         if (!mLauncher.supportDrag(v)){
             return true;
         }
@@ -667,6 +703,7 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
         oa.setDuration(mExpandDuration);
         setLayerType(LAYER_TYPE_HARDWARE, null);
         oa.start();
+        mFolderIcon.updateLeftCornerNum();
     }
 
     public boolean acceptDrop(DragObject d) {
@@ -699,7 +736,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
 
     @Override
     public void onDragOver(DragObject d) {
-        if (d.snapDragViews != null && d.snapDragViews.size() >0 ){
+        if (d.snapDragViews != null
+                && mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE ){
             completeDragExit();
             return;
         }
@@ -774,6 +812,9 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
     };
 
     public void completeDragExit() {
+        if (mSwitchingWorkspaceMode){
+            return;
+        }
         if (mInfo.opened) {
             mLauncher.closeFolder();
             mRearrangeOnClose = true;
@@ -854,6 +895,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
                 if (dragView.getType() == BatchArrangeDragView.BubbleTextViewType.FOLDER){
                     ShortcutInfo si = (ShortcutInfo) dragView.getView().getTag();
                     views.add(si.rank, dragView.getView());
+                }else {
+                    dragView.getView().setVisibility(VISIBLE);
                 }
             }
             mContent.arrangeChildren(views, views.size());
@@ -862,6 +905,9 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
             mSuppressOnAdd = true;
             mFolderIcon.onDrop(d);
             mSuppressOnAdd = false;
+            if (mSwitchingWorkspaceMode){
+                icon.setVisibility(VISIBLE);
+            }
         }
 
         if (target != this) {
@@ -1190,8 +1236,8 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
             }
         };
         View finalChild = mContent.getLastItem();
-        ShortcutInfo shortcutInfo = (ShortcutInfo) finalChild.getTag();
         if (finalChild != null) {
+            ShortcutInfo shortcutInfo = (ShortcutInfo) finalChild.getTag();
             mFolderIcon.performDestroyAnimation(finalChild, onCompleteRunnable, shortcutInfo);
         } else {
             onCompleteRunnable.run();
@@ -1325,10 +1371,14 @@ public class Folder extends LinearLayout implements DragSource, View.OnClickList
         // If the item was dropped onto this open folder, we have done the work associated
         // with adding the item to the folder, as indicated by mSuppressOnAdd being set
         if (mSuppressOnAdd) return;
-        mContent.createAndAddViewForRank(item, mContent.allocateRankForNewItem(item));
+        View icon = mContent.createAndAddViewForRank(item, mContent.allocateRankForNewItem(item));
         mItemsInvalidated = true;
         LauncherModel.addOrMoveItemInDatabase(
                 mLauncher, item, mInfo.id, 0, item.cellX, item.cellY);
+
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE){
+            mLauncher.updateBatchArrangeApps(icon);
+        }
     }
 
     public void onRemove(ShortcutInfo item) {
