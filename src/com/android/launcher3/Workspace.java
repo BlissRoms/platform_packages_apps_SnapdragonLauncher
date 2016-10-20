@@ -296,8 +296,6 @@ public class Workspace extends PagedView
 
     //for batch arrange apps feature
     private boolean mHasMoved = false;
-    // require enough space for drag
-    private boolean mHasEnoughSpace = true;
 
     private final Runnable mBindPages = new Runnable() {
         @Override
@@ -2282,7 +2280,6 @@ public class Workspace extends PagedView
         }
 
         mHasMoved = false;
-        mHasEnoughSpace = true;
 
         mDragInfo = cellInfo;
         child.setVisibility(INVISIBLE);
@@ -2750,7 +2747,6 @@ public class Workspace extends PagedView
                 }
 
                 if (foundCell) {
-                    mHasEnoughSpace = true;
                     final ItemInfo info = (ItemInfo) cell.getTag();
                     addInScreen(hasMovedLayouts, cell, mTargetCell[0], mTargetCell[1],
                             container, screenId);
@@ -2808,11 +2804,17 @@ public class Workspace extends PagedView
                     }
                     markCellsAsOccupiedForView(cell);
                     //restore initial position for "batch arrange apps"
-                    mHasEnoughSpace = false;
                     for (BatchArrangeDragView dragView: d.snapDragViews){
                         BatchArrangeDragView.BubbleTextViewType type = dragView.getType();
                         if (type == BatchArrangeDragView.BubbleTextViewType.WORKSPACE) {
                             markCellsAsOccupiedForView(dragView.getView());
+                        }
+                    }
+
+                    for (BatchArrangeDragView dragView: d.snapDragViews) {
+                        BatchArrangeDragView.BubbleTextViewType type = dragView.getType();
+                        if (type == BatchArrangeDragView.BubbleTextViewType.FOLDER){
+                            dealExtraFolderView(dragView);
                         }
                     }
                 }
@@ -2865,10 +2867,47 @@ public class Workspace extends PagedView
                 }
             }
 
-            if (mHasEnoughSpace && mHasMoved && mState ==  State.ARRANGE){
+            if (mState == State.ARRANGE && mHasMoved){
                 mLauncher.clearBatchArrangeApps();
             }
         }
+    }
+
+    private void dealExtraFolderView(BatchArrangeDragView dragView){
+        for (int i = 0;i<mScreenOrder.size();i++){
+            if (mScreenOrder.get(i) != EXTRA_EMPTY_SCREEN_ID){
+                CellLayout layout = getScreenWithId(mScreenOrder.get(i));
+                int[] cordinates = new int[2];
+                if (layout != null && layout.findVacantCell(1,1,cordinates)){
+                    addShortcutInScreen(dragView, mScreenOrder.get(i), layout, cordinates);
+                    return;
+                }
+            }
+        }
+
+        // Still no position found. Add a new screen to the end.
+        commitExtraEmptyScreen();
+        addExtraEmptyScreen();
+        dealExtraFolderView(dragView);
+    }
+
+    private void addShortcutInScreen(BatchArrangeDragView dragView, long screenId,
+                                     CellLayout layout, int[] cordinates){
+        long container = LauncherSettings.Favorites.CONTAINER_DESKTOP;
+        View  cell = dragView.getView();
+        ItemInfo info =  (ItemInfo) cell.getTag();
+        cell = mLauncher.createShortcut(layout,
+                (ShortcutInfo) info);
+        addInScreen(cell, container, screenId, cordinates[0], cordinates[1],
+                info.spanX, info.spanY, false);
+        mLauncher.updateBatchArrangeApps(cell);
+        dragView.setCoorView(cell);
+        updateItemLayoutParams(cell, cordinates[0], cordinates[1], 1, 1);
+        // Add the item to DB before adding to screen ensures that the container and
+        // other values of the info is properly updated.
+        LauncherModel.addOrMoveItemInDatabase(mLauncher, info, container, screenId,
+                cordinates[0], cordinates[1]);
+        markCellsAsOccupiedForView(cell);
     }
 
     private void markCellsAsOccupiedForView(View cell){
@@ -2881,21 +2920,11 @@ public class Workspace extends PagedView
         if (d.snapDragViews != null && d.snapDragViews.size() > 0){
             mLauncher.getDragLayer().clearBatchAppsAnimatedView();
             for (BatchArrangeDragView dragView: d.snapDragViews){
-                animateBatchArrangeViewDrop(dragView, duration, onCompleteRunnable);
+                mLauncher.getDragLayer().animateViewIntoPosition(dragView, dragView.getView(),
+                        duration, onCompleteRunnable, this);
+                dragView.setVisibility(VISIBLE);
             }
             mLauncher.getDragLayer().startPlayAnimations();
-        }
-    }
-
-    private void animateBatchArrangeViewDrop(BatchArrangeDragView dragView, int duration,
-             Runnable onCompleteRunnable){
-        if (dragView.getType() == BatchArrangeDragView.BubbleTextViewType.WORKSPACE){
-            mLauncher.getDragLayer().animateViewIntoPosition(dragView, dragView.getView(),
-                    duration, onCompleteRunnable, this);
-            dragView.setVisibility(VISIBLE);
-        }else {
-            dragView.prepareResetAnimation();
-            dragView.getAnim().start();
         }
     }
 
@@ -3998,10 +4027,14 @@ public class Workspace extends PagedView
                         info.container, info.screenId);
                 if (cellLayout != null) {
                     cellLayout.onDropChild(dragView.getView());
+                    markCellsAsOccupiedForView(dragView.getView());
                 }
+                dragView.getView().setVisibility(VISIBLE);
+            }
+
+            for (BatchArrangeDragView dragView : d.snapDragViews) {
                 if (dragView.getType() == BatchArrangeDragView.BubbleTextViewType.FOLDER) {
-                    dragView.restoreFolderItem();
-                } else {
+                    dealExtraFolderView(dragView);
                     dragView.getView().setVisibility(VISIBLE);
                 }
             }

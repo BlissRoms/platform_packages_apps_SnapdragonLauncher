@@ -196,13 +196,7 @@ public class BatchArrangeDragView extends DragView {
 
     public void prepareStartAnimation(int touchX, int touchY) {
         prepareAnimation(mStartPointXY[0], mStartPointXY[1],
-                touchX - mRegistrationX - mRadius, touchY - mRegistrationY - mRadius, false);
-    }
-
-    public void prepareResetAnimation() {
-        int fromX = (int) getTranslationX();
-        int fromY = (int) getTranslationY();
-        prepareAnimation(fromX, fromY, mStartPointXY[0], mStartPointXY[1], true);
+                touchX - mRegistrationX - mRadius, touchY - mRegistrationY - mRadius);
     }
 
     private int calculateDuration(final int fromX, final int fromY, int toX, int toY) {
@@ -219,8 +213,7 @@ public class BatchArrangeDragView extends DragView {
         return duration;
     }
 
-    private void prepareAnimation(final int fromX, final int fromY, int toX, int toY,
-                                  final boolean childShow) {
+    private void prepareAnimation(final int fromX, final int fromY, int toX, int toY) {
         final int offsetX = fromX - toX;
         final int offsetY = fromY - toY;
         // Animate the view into the correct position
@@ -253,14 +246,7 @@ public class BatchArrangeDragView extends DragView {
                 if (mMoveRunnable != null) {
                     mMoveRunnable.run();
                 }
-                if (childShow) {
-                    if (mViewType == BubbleTextViewType.FOLDER){
-                        restoreFolderItem();
-                    }else {
-                        mView.setVisibility(VISIBLE);
-                    }
-                    remove();
-                }
+                mMoveRunnable = null;
             }
         });
     }
@@ -322,13 +308,6 @@ public class BatchArrangeDragView extends DragView {
     public static void resetCellXY(ShortcutInfo item) {
         item.cellX = -1;
         item.cellY = -1;
-    }
-
-    public void restoreFolderItem() {
-        ShortcutInfo info = (ShortcutInfo) mView.getTag();
-        if (mFolderParent != null) {
-            mFolderParent.getFolder().getInfo().add(info);
-        }
     }
 
     public int getLeftCornerRadius() {
