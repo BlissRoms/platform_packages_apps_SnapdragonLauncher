@@ -296,6 +296,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                     0, LayoutParams.FILL_PARENT, 1.0f));
         }
 
+        newFolder.mFolderName.setTextVisibility(false);
         addView(newFolder, cellX);
         newFolder.setOnLongClickListener(mLongClickListener);
         return newFolder;
@@ -314,6 +315,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                     0, LayoutParams.FILL_PARENT, 1.0f));
         }
 
+        folderView.mFolderName.setTextVisibility(false);
         addView(folderView, info.cellX);
         return  folderView;
     }
