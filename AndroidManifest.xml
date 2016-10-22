@@ -159,14 +159,6 @@
             android:process=":settings_process">
         </activity>
 
-        <activity
-            android:name="com.android.launcher3.RequestPermissionsActivity" >
-        </activity>
-
-        <activity
-            android:name="com.android.launcher3.RequestPermissionsActivityBase" >
-        </activity>
-
         <!-- Debugging tools -->
         <activity
             android:name="com.android.launcher3.MemoryDumpActivity"

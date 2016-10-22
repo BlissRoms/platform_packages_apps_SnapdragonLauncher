@@ -254,7 +254,11 @@ public class BatchArrangeDragView extends DragView {
                     mMoveRunnable.run();
                 }
                 if (childShow) {
-                    mView.setVisibility(VISIBLE);
+                    if (mViewType == BubbleTextViewType.FOLDER){
+                        restoreFolderItem();
+                    }else {
+                        mView.setVisibility(VISIBLE);
+                    }
                     remove();
                 }
             }

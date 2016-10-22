@@ -575,10 +575,10 @@ public class DragController {
         if (dropTarget != null) {
             if(mLastDropTarget instanceof  Hotseat && dropTarget instanceof  Workspace){
                 mLauncher.mHotseat.setDragViewVisibility(false);
-                Hotseat.mDragFromWorkspace = false;
+                mLauncher.mHotseat.updateDragFromExternal(false);
             }else if((mLastDropTarget instanceof  Workspace && dropTarget instanceof  Hotseat)
                     || (mLastDropTarget instanceof  Folder && dropTarget instanceof  Hotseat)){
-                Hotseat.mDragFromWorkspace = true;
+                mLauncher.mHotseat.updateDragFromExternal(true);
             }
             if (mLastDropTarget != dropTarget) {
                 if (mLastDropTarget != null) {

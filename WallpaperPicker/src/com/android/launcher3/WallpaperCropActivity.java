@@ -16,6 +16,7 @@
 
 package com.android.launcher3;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
@@ -23,6 +24,7 @@ import android.app.WallpaperManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -50,8 +52,11 @@ import com.android.photos.BitmapRegionTileSource;
 import com.android.photos.BitmapRegionTileSource.BitmapSource;
 import com.android.photos.BitmapRegionTileSource.BitmapSource.InBitmapProvider;
 import com.android.photos.views.TiledImageRenderer.TileSource;
+import android.Manifest.permission;
 
 import java.lang.String;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -82,6 +87,10 @@ public class WallpaperCropActivity extends BaseActivity implements Handler.Callb
 
     private HandlerThread mLoaderThread;
     private Handler mLoaderHandler;
+    private final int REQUEST_ALL_PERMISSIONS = 1;
+    private final String[] REQUIRED_PERMISSIONS = new String[]{
+            permission.READ_EXTERNAL_STORAGE};
+
     @Thunk LoadRequest mCurrentLoadRequest;
     private byte[] mTempStorageForDecoding = new byte[16 * 1024];
     // A weak-set of reusable bitmaps
@@ -90,11 +99,7 @@ public class WallpaperCropActivity extends BaseActivity implements Handler.Callb
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        if (RequestPermissionsActivity.startPermissionActivity(this)) {
-            finish();
-        }
         super.onCreate(savedInstanceState);
-
         mLoaderThread = new HandlerThread("wallpaper_loader");
         mLoaderThread.start();
         mLoaderHandler = new Handler(mLoaderThread.getLooper(), this);
@@ -103,6 +108,52 @@ public class WallpaperCropActivity extends BaseActivity implements Handler.Callb
         if (!enableRotation()) {
             setRequestedOrientation(Configuration.ORIENTATION_PORTRAIT);
         }
+        if (!checkAllNeedPermissions(REQUIRED_PERMISSIONS)) {
+            requestPermissions();
+        }
+    }
+
+    private boolean checkAllNeedPermissions(String[] permissions) {
+        for (String permission : permissions) {
+            if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode, String[] permissions, int[] grantedResults) {
+        if (!(requestCode == REQUEST_ALL_PERMISSIONS && permissions != null
+                && permissions.length > 0
+                && arePermissionsGranted(permissions, grantedResults))) {
+            Toast.makeText(this, R.string.missing_required_permission, Toast.LENGTH_SHORT).show();
+            finish();
+        }
+    }
+
+    private void requestPermissions() {
+        final ArrayList<String> noGrantedPermissions = new ArrayList<String>();
+        for (String permission : REQUIRED_PERMISSIONS) {
+            if (checkSelfPermission(permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                noGrantedPermissions.add(permission);
+            }
+        }
+
+        requestPermissions(noGrantedPermissions.toArray(new String[noGrantedPermissions.size()]),
+                REQUEST_ALL_PERMISSIONS);
+    }
+
+    private boolean arePermissionsGranted(String permissions[], int[] grantResult) {
+        for (int i = 0; i < permissions.length; i++) {
+            if (grantResult[i] != PackageManager.PERMISSION_GRANTED
+                    && Arrays.asList(REQUIRED_PERMISSIONS).contains(permissions[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     protected void init() {

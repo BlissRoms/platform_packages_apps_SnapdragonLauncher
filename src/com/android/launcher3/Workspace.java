@@ -2494,13 +2494,6 @@ public class Workspace extends PagedView
             if (!foundCell) {
                 // Don't show the message if we are dropping on the AllApps button and the hotseat
                 // is full
-                for (BatchArrangeDragView dragView: d.snapDragViews){
-                    BatchArrangeDragView.BubbleTextViewType type = dragView.getType();
-                    if (type == BatchArrangeDragView.BubbleTextViewType.WORKSPACE
-                            || type == BatchArrangeDragView.BubbleTextViewType.HOTSEAT){
-                        dragView.getView().setVisibility(VISIBLE);
-                    }
-                }
                 d.deferDragViewCleanupPostAnimation = false;
                 mLauncher.showOutOfSpaceMessage(false);
                 return false;
@@ -2819,10 +2812,6 @@ public class Workspace extends PagedView
                         BatchArrangeDragView.BubbleTextViewType type = dragView.getType();
                         if (type == BatchArrangeDragView.BubbleTextViewType.WORKSPACE) {
                             markCellsAsOccupiedForView(dragView.getView());
-                        } else if (type == BatchArrangeDragView.BubbleTextViewType.FOLDER){
-                            //drag exception need discuss with UI/UE
-                            dragView.remove();
-                            dragView.restoreFolderItem();
                         }
                     }
                 }
@@ -2875,7 +2864,7 @@ public class Workspace extends PagedView
                 }
             }
 
-            if (mHasEnoughSpace && mState ==  State.ARRANGE){
+            if (mHasEnoughSpace && mHasMoved && mState ==  State.ARRANGE){
                 mLauncher.clearBatchArrangeApps();
             }
         }
@@ -2890,11 +2879,8 @@ public class Workspace extends PagedView
              Runnable onCompleteRunnable){
         if (d.snapDragViews != null && d.snapDragViews.size() > 0){
             mLauncher.getDragLayer().clearBatchAppsAnimatedView();
-            final boolean haveFolderItem = haveFolderBubbleTextView(d);
             for (BatchArrangeDragView dragView: d.snapDragViews){
-                if (mHasEnoughSpace || !haveFolderItem) {
-                    animateBatchArrangeViewDrop(dragView, duration, onCompleteRunnable);
-                }
+                animateBatchArrangeViewDrop(dragView, duration, onCompleteRunnable);
             }
             mLauncher.getDragLayer().startPlayAnimations();
         }
@@ -2902,7 +2888,7 @@ public class Workspace extends PagedView
 
     private void animateBatchArrangeViewDrop(BatchArrangeDragView dragView, int duration,
              Runnable onCompleteRunnable){
-        if (dragView.getType() != BatchArrangeDragView.BubbleTextViewType.HOTSEAT){
+        if (dragView.getType() == BatchArrangeDragView.BubbleTextViewType.WORKSPACE){
             mLauncher.getDragLayer().animateViewIntoPosition(dragView, dragView.getView(),
                     duration, onCompleteRunnable, this);
             dragView.setVisibility(VISIBLE);
@@ -3990,6 +3976,7 @@ public class Workspace extends PagedView
                 throw new RuntimeException("Invalid state: cellLayout == null in "
                         + "Workspace#onDropCompleted. Please file a bug. ");
             };
+            onDropChilds(d, success);
         }
         if ((d.cancelled || (beingCalledAfterUninstall && !mUninstallSuccessful))
                 && mDragInfo.cell != null) {
@@ -4000,6 +3987,24 @@ public class Workspace extends PagedView
         }
         mDragOutline = null;
         mDragInfo = null;
+    }
+
+    public void onDropChilds(DragObject d, boolean success){
+        if (!success) {
+            for (BatchArrangeDragView dragView : d.snapDragViews) {
+                ItemInfo info = (ItemInfo) dragView.getView().getTag();
+                final CellLayout cellLayout = mLauncher.getCellLayout(
+                        info.container, info.screenId);
+                if (cellLayout != null) {
+                    cellLayout.onDropChild(dragView.getView());
+                }
+                if (dragView.getType() == BatchArrangeDragView.BubbleTextViewType.FOLDER) {
+                    dragView.restoreFolderItem();
+                } else {
+                    dragView.getView().setVisibility(VISIBLE);
+                }
+            }
+        }
     }
 
     /**
