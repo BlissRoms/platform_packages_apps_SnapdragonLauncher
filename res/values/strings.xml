@@ -37,6 +37,10 @@
     <string name="folder_name"></string>
     <!-- Work folder name -->
     <string name="work_folder_name">Work</string>
+    <!-- Gualcomm apps folder name -->
+    <string name="qualcomm_apps_folder_name">Qualcomm Apps</string>
+    <!-- Google apps folder name -->
+    <string name="google_folder_name">Google</string>
     <!-- Displayed when user selects a shortcut for an app that was uninstalled [CHAR_LIMIT=none]-->
     <string name="activity_not_found">App isn\'t installed.</string>
     <!-- Displayed when user selects a shortcut for an app that is current not available [CHAR_LIMIT=none]-->
@@ -272,4 +276,10 @@
     <string name="batch_tips_target_label_initial">Tap icon to batch arrange apps</string>
     <string name="batch_tips_target_drag_start_label">Release to place apps</string>
     <string name="batch_tips_target_drag_label_selected">selected，long press to drag</string>
+
+    <string name="switch_to_launcher3">Launcher3</string>
+    <string name="set_flat_launcher_as_home_msg">Use Snapdragon Launcher as home?</string>
+    <string name="set_launcher3_as_home_msg">Use Launcher3 as home?</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_ok">Ok</string>
 </resources>

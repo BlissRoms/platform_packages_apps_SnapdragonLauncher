@@ -448,7 +448,10 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         }
 
         mDragView = setSeat(dragInfo, true);
-        mLauncher.updateBatchArrangeApps(mDragView);
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE
+                && mDragView instanceof BubbleTextView) {
+            mLauncher.updateBatchArrangeApps(mDragView);
+        }
 
         if (batchArrange){
             final int basic = dragInfo.cellX;
