@@ -109,4 +109,10 @@
     <string name="batch_tips_target_label_initial">点击图标开始批量整理</string>
     <string name="batch_tips_target_drag_start_label">松手可放置应用</string>
     <string name="batch_tips_target_drag_label_selected">个已选，可长按拖动</string>
+
+    <string name="switch_to_launcher3">桌面3</string>
+    <string name="set_flat_launcher_as_home_msg">将“晓龙桌面”设为主屏幕应用?</string>
+    <string name="set_launcher3_as_home_msg">将“桌面3”设为主屏幕应用?</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="dialog_ok">确定</string>
 </resources>
