@@ -20,6 +20,7 @@
 <manifest
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="org.codeaurora.snaplauncher">
+
     <uses-sdk android:targetSdkVersion="23" android:minSdkVersion="16"/>
 
     <permission
@@ -62,12 +63,14 @@
     <uses-permission android:name="com.android.launcher3.permission.WRITE_SETTINGS" />
     <uses-permission android:name="com.android.launcher3.permission.RECEIVE_LAUNCH_BROADCASTS" />
     <uses-permission android:name="com.android.launcher3.permission.RECEIVE_FIRST_LOAD_BROADCAST" />
+    <uses-permission android:name="android.permission.SET_PREFERRED_APPLICATIONS"/>
+    <uses-permission android:name="android.permission.FORCE_STOP_PACKAGES"/>
 
     <application
         android:allowBackup="@bool/enable_backup"
         android:backupAgent="com.android.launcher3.LauncherBackupAgentHelper"
         android:hardwareAccelerated="true"
-        android:icon="@mipmap/ic_launcher_home"
+        android:icon="@mipmap/ic_flat_launcher"
         android:label="@string/snaplauncher_app_name"
         android:largeHeap="@bool/config_largeHeap"
         android:restoreAnyVersion="true"
@@ -112,6 +115,28 @@
         </activity>
 
         -->
+        <activity
+            android:name="org.codeaurora.snaplauncher.SwitchToLauncher3Activity"
+            android:label="@string/switch_to_launcher3"
+            android:enabled="false"
+            android:exported="false"
+            android:theme="@style/Theme.UserDialog">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="org.codeaurora.snaplauncher.SwitchToFlatLauncherActivity"
+            android:label="@string/snaplauncher_app_name"
+            android:enabled="true"
+            android:theme="@style/Theme.UserDialog">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name="com.android.launcher3.ToggleWeightWatcher"

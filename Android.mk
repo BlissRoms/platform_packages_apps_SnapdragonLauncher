@@ -48,7 +48,7 @@ LOCAL_AAPT_FLAGS += --rename-manifest-package org.codeaurora.snaplauncher
 LOCAL_SDK_VERSION := current
 LOCAL_PACKAGE_NAME := SnapdragonLauncher
 LOCAL_PRIVILEGED_MODULE := true
-LOCAL_CERTIFICATE := shared
+LOCAL_CERTIFICATE := platform
 
 LOCAL_OVERRIDES_PACKAGES := Home Launcher2
 
