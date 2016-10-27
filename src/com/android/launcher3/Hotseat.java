@@ -22,6 +22,8 @@ import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.os.Handler;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -63,6 +65,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     private boolean mWillSetDragViewVisible = false;
 
     private static final int FOLDER_CREATION_TIMEOUT = 0;
+    private static final int FOLDER_CREATE_ANIMATION = 1;
     private final Alarm mFolderCreationAlarm = new Alarm();
     @Thunk FolderIcon.FolderRingAnimator mDragFolderRingAnimator = null;
 
@@ -92,6 +95,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     private ReorderAlarmListener listener;
     private float mMaxDistanceForFolderCreation;
     private boolean mLastDropInTargetArea;
+    private boolean mNewFolderCreated = false;
 
     public Hotseat(Context context) {
         this(context, null);
@@ -251,12 +255,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             return mFolderView;
         } else {
             BubbleTextView hotseatV;
-
-            if (view instanceof BubbleTextView) {
-                hotseatV = (BubbleTextView) view;
-            } else {
-                hotseatV = createBubbleTextSeat(view, item);
-            }
+            hotseatV = createBubbleTextSeat(view, item);
 
             hotseatV.setIsHotseat(true);
             ShortcutInfo info = (ShortcutInfo) item;
@@ -298,11 +297,13 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         }
 
         newFolder.mFolderName.setTextVisibility(false);
+
+        LayoutTransition layoutTransition = createLayoutTransition();
+        newFolder.setLayoutTransition(layoutTransition);
         addView(newFolder, cellX);
         newFolder.setOnLongClickListener(mLongClickListener);
         return newFolder;
     }
-
 
     private FolderIcon createFolderSeat(View view,FolderInfo info) {
         removeView(view);
@@ -317,6 +318,9 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         }
 
         folderView.mFolderName.setTextVisibility(false);
+
+        LayoutTransition layoutTransition = createLayoutTransition();
+        folderView.setLayoutTransition(layoutTransition);
         addView(folderView, info.cellX);
         return  folderView;
     }
@@ -350,7 +354,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             float scale = mLauncher.getDragLayer().getDescendantRectRelativeToSelf(v,
                     folderLocation);
             target.removeView(v);
-
             FolderIcon fi =
                     mLauncher.addFolder(target, container, screenId, targetCell, 0);
             destInfo.cellX = -1;
@@ -434,6 +437,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         if (createUserFolderIfNecessary(/*d.dragView,*/ container,
                 mContentHotSeat, mTargetCell, targetCellDistance,
                 d.dragSource instanceof  Workspace, d, null)) {
+            mNewFolderCreated = true;
             return ;
         }
         if(addToExistingFolderIfNecessary(mContentHotSeat,cellX,targetCellDistance,
@@ -504,15 +508,8 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         mContentHotSeat = (Hotseat) findViewById(R.id.hotseat);
         mContentHotSeat.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.MATCH_PARENT, 1.0f));
-
-        LayoutTransition transition = new LayoutTransition();
-        transition.setAnimator(LayoutTransition.APPEARING, null);
-        transition.setAnimator(LayoutTransition.DISAPPEARING, null);
-        transition.setStagger(LayoutTransition.CHANGE_APPEARING, 0);
-        transition.setStagger(LayoutTransition.CHANGE_DISAPPEARING, 0);
-        transition.setAnimateParentHierarchy(true);
-        transition.setDuration(400);
-        mContentHotSeat.setLayoutTransition(transition);
+        LayoutTransition layoutTransition = createLayoutTransition();
+        mContentHotSeat.setLayoutTransition(layoutTransition);
     }
 
     /**
@@ -542,6 +539,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     @Override
     public void onDragEnter(DragObject dragObject) {
+        mNewFolderCreated = false;
         mCreateUserFolderOnDrop = false;
         mAddToExistingFolderOnDrop = false;
         cleanupFolderCreation();
@@ -568,7 +566,39 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         setCurrentDropOverCell(-1);
     }
 
+    private LayoutTransition createLayoutTransition() {
+        LayoutTransition transition = new LayoutTransition();
+        transition.setAnimator(LayoutTransition.APPEARING, null);
+        transition.setAnimator(LayoutTransition.DISAPPEARING, null);
+
+        transition.setStagger(LayoutTransition.CHANGE_APPEARING, 0);
+        transition.setStagger(LayoutTransition.CHANGE_DISAPPEARING, 0);
+        transition.setAnimateParentHierarchy(true);
+        transition.setDuration(400);
+        return transition;
+    }
+
+    private void startHotseatLayoutTransition(LayoutTransition oriLayoutTransition) {
+        setLayoutTransition(oriLayoutTransition);
+        int count = getChildCount();
+        for (int i = 0; i < count; i++) {
+            View v = getChildAt(i);
+
+            if (v instanceof BubbleTextView && v.getVisibility() != GONE) {
+                getLayoutTransition().addChild(this, v);
+            }
+            if (v instanceof FolderIcon) {
+                int childCount = ((FolderIcon) v).getChildCount();
+                for (int j = 0; j < childCount; j++)
+                    ((FolderIcon) v).getLayoutTransition().addChild(((FolderIcon) v),
+                            ((FolderIcon) v).getChildAt(j));
+            }
+        }
+    }
+
     public void setDragViewVisibility(boolean visible) {
+        LayoutTransition oriLayoutTransition = getLayoutTransition();
+        setLayoutTransition(null);
         if (mDragView != null) {
             if (visible) {
                 mDragView.setVisibility(View.VISIBLE);
@@ -576,6 +606,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                 mDragView.setVisibility(View.GONE);
             }
         }
+        startHotseatLayoutTransition(oriLayoutTransition);
     }
 
     boolean willCreateUserFolder(ItemInfo info, Hotseat target, int targetCell, float
@@ -824,6 +855,57 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         mLauncher.getDragLayer().getLocationInDragLayer(this, loc);
     }
 
+    private void handleFolderAnimation(Object obj) {
+        handleDropCompleted((DropParams) obj);
+        mNewFolderCreated = false;
+    }
+
+    private void handleDropCompleted(DropParams param) {
+        if (mWillSetDragViewVisible || !param.success || param.target instanceof InfoDropTarget) {
+            if (mDragView != null) {
+                mDragView.setVisibility(View.VISIBLE);
+            }
+        } else {
+            if (mDragView != null && mDragView.getVisibility() != GONE) {
+                LayoutTransition oriLayoutTransition = getLayoutTransition();
+                setLayoutTransition(null);
+                mDragView.setVisibility(View.GONE);
+                startHotseatLayoutTransition(oriLayoutTransition);
+            }
+        }
+
+        boolean beingCalledAfterUninstall = mDeferredAction != null;
+        if ((param.d.cancelled || (beingCalledAfterUninstall && !mUninstallSuccessful))
+                && mDragView != null) {
+            mDragView.setVisibility(VISIBLE);
+        }
+
+        mLauncher.mWorkspace.onDropChilds(param.d, param.success);
+        if (beingCalledAfterUninstall || mNewFolderCreated) {
+            updateDockItems();
+            resetState();
+        }
+    }
+
+    private class DropParams {
+        View target;
+        DragObject d;
+        boolean isFlingToDelete;
+        boolean success;
+        View dragView;
+    }
+
+    private Handler myHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case FOLDER_CREATE_ANIMATION:
+                    handleFolderAnimation(msg.obj);
+                    break;
+            }
+            super.handleMessage(msg);
+        }
+    };
+
     /**
      * Called at the end of a drag which originated on the hotseat.
      */
@@ -838,26 +920,17 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             };
             return;
         }
-        if (mWillSetDragViewVisible || !success || target instanceof InfoDropTarget) {
-            if (mDragView != null) {
-                mDragView.setVisibility(View.VISIBLE);
-            }
+
+        DropParams param = new DropParams();
+        param.d = d;
+        param.target = target;
+        param.isFlingToDelete = isFlingToDelete;
+        param.success = success;
+        if (mNewFolderCreated) {
+            Message msg = myHandler.obtainMessage(FOLDER_CREATE_ANIMATION, param);
+            myHandler.sendMessageDelayed(msg, 100);
         } else {
-            if (mDragView != null) {
-                mDragView.setVisibility(View.GONE);
-            }
-        }
-
-        boolean beingCalledAfterUninstall = mDeferredAction != null;
-        if ((d.cancelled || (beingCalledAfterUninstall && !mUninstallSuccessful))
-                && mDragView != null) {
-            mDragView.setVisibility(VISIBLE);
-        }
-
-        mLauncher.mWorkspace.onDropChilds(d, success);
-        if (beingCalledAfterUninstall){
-            updateDockItems();
-            resetState();
+            handleDropCompleted(param);
         }
     }
 
@@ -905,7 +978,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
 
     @Override
     public void onDragEnd() {
-        if (mDragView != null && !mDeferDropAfterUninstall) {
+        if (mDragView != null && !mDeferDropAfterUninstall && !mNewFolderCreated) {
             updateDockItems();
             resetState();
         }
@@ -1083,8 +1156,11 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                 }
                 int vericellx = getCellXByPos(mDragPos);
                 if (vericellx < getChildCount()) {
+                    LayoutTransition oriLayoutTransition = getLayoutTransition();
+                    setLayoutTransition(null);
                     removeView(emptyView);
                     addView(emptyView, vericellx);
+                    startHotseatLayoutTransition(oriLayoutTransition);
                 }
                 mDragView = emptyView;
                 updateDragFromExternal(false);
@@ -1096,9 +1172,12 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                     if (idx > getChildCount() - 1) {
                         return;
                     }
-                    View dragView = getChildAt(idx);
+                    View dragView = mDragView;
+                    LayoutTransition oriLayoutTransition = getLayoutTransition();
+                    setLayoutTransition(null);
                     removeViewAt(idx);
                     addView(dragView, cellX);
+                    startHotseatLayoutTransition(oriLayoutTransition);
                     mDragPos = pos;
                 }
             }
