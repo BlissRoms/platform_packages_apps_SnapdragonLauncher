@@ -18,6 +18,7 @@ package com.android.launcher3;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.SearchManager;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
@@ -25,6 +26,7 @@ import android.content.ActivityNotFoundException;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -61,6 +63,7 @@ import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -116,6 +119,12 @@ public final class Utilities {
     private static boolean sForceEnableRotation = isPropertyEnabled(FORCE_ENABLE_ROTATION_PROPERTY);
 
     public static final String ALLOW_ROTATION_PREFERENCE_KEY = "pref_allowRotation";
+
+    // set Flat Launcher as default launcher
+    public static final String FLAT_LAUNCHER_PACKAGENAME = "org.codeaurora.snaplauncher";
+    // set Launcher3 as default launcher
+    public static final String LAUNCHER_PACKAGENAME = "com.android.launcher3";
+    public static final String LAUNCHER_CLASSNAME = "com.android.launcher3.Launcher";
 
     public static boolean isPropertyEnabled(String propertyName) {
         return Log.isLoggable(propertyName, Log.VERBOSE);
@@ -787,5 +796,86 @@ public final class Utilities {
         explicitIntent.setComponent(component);
 
         return explicitIntent;
+    }
+
+    public static void setupDefaultLauncher(PackageManager pm, Context context,
+            ComponentName defaultLauncher){
+        if (defaultLauncher.getPackageName().equals(getLauncherPackageName(context))){
+            return;
+        }
+        //clear default launcher
+        ArrayList<IntentFilter> intentList = new ArrayList<IntentFilter>();
+        ArrayList<ComponentName> cnList = new ArrayList<ComponentName>();
+        context.getPackageManager().getPreferredActivities(intentList, cnList, null);
+        IntentFilter dhIF;
+        for(int i = 0; i < cnList.size(); i++)
+        {
+            dhIF = intentList.get(i);
+            if(dhIF.hasAction(Intent.ACTION_MAIN) &&
+                    dhIF.hasCategory(Intent.CATEGORY_HOME))
+            {
+                context.getPackageManager().clearPackagePreferredActivities(cnList.get(i)
+                        .getPackageName());
+            }
+        }
+
+        Intent queryIntent = new Intent();
+        queryIntent.addCategory(Intent.CATEGORY_HOME);
+        queryIntent.setAction(Intent.ACTION_MAIN);
+
+        List<ResolveInfo> homeActivities = pm.queryIntentActivities(queryIntent, 0);
+        if(homeActivities == null) {
+            return;
+        }
+        int activityNum = homeActivities.size();
+        ComponentName[] set = new ComponentName[activityNum];
+        int defaultMatch = -1;
+        for(int i = 0; i < activityNum; i++){
+
+            ResolveInfo info = homeActivities.get(i);
+            set[i] = new ComponentName(info.activityInfo.packageName, info.activityInfo.name);
+            if(defaultLauncher.getClassName().equals(info.activityInfo.name)
+                    && defaultLauncher.getPackageName().equals(info.activityInfo.packageName)){
+                defaultMatch = info.match;
+            }
+        }
+        //if Flat Launcher is not found, do not set anything
+        if(defaultMatch == -1){
+            return;
+        }
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(Intent.ACTION_MAIN);
+        filter.addCategory(Intent.CATEGORY_HOME);
+        filter.addCategory(Intent.CATEGORY_DEFAULT);
+
+        pm.addPreferredActivity(filter, defaultMatch, set, defaultLauncher);
+    }
+
+    public static void killLauncher(Context context, String packageName) {
+        try {
+            ActivityManager am = (ActivityManager)context
+                    .getSystemService(Context.ACTIVITY_SERVICE);
+            Method forceStopPackage = am.getClass()
+                    .getDeclaredMethod("forceStopPackage", String.class);
+            forceStopPackage.setAccessible(true);
+            forceStopPackage.invoke(am, packageName);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    private static String getLauncherPackageName(Context context) {
+        final Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        final ResolveInfo res = context.getPackageManager().resolveActivity(intent, 0);
+        if (res.activityInfo == null) {
+            // should not happen. A home is always installed, isn't it?
+            return null;
+        }
+        if (res.activityInfo.packageName.equals("android")) {
+            return null;
+        } else {
+            return res.activityInfo.packageName;
+        }
     }
 }

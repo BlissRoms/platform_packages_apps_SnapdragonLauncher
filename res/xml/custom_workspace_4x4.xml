@@ -74,144 +74,6 @@
     </resolve>
 
     <!-- Workspace screen 1 -->
-    <folder
-        launcher:screen="0"
-        launcher:x="0"
-        launcher:y="2"
-        launcher:title="@string/qualcomm_apps_folder_name">
-        <favorite
-            launcher:packageName="com.qualcomm.adrenotest"
-            launcher:className="android.app.NativeActivity"/>
-        <favorite
-            launcher:packageName="com.qti.antitheftdemo"
-            launcher:className="com.qti.antitheftdemo.MainActivity" />
-        <favorite
-            launcher:packageName="com.android.audiosettings"
-            launcher:className="com.android.audiosettings.AudioSettings" />
-        <favorite
-            launcher:packageName="com.android.qlogging"
-            launcher:className="com.android.qlogging.Main"/>
-        <favorite
-            launcher:packageName="org.codeaurora.bluetooth.bttestapp"
-            launcher:className="org.codeaurora.bluetooth.bttestapp.MainActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.carrierconfigure"
-            launcher:className="com.qualcomm.qti.carrierconfigure.ConfigurationActivity" />
-        <favorite
-            launcher:packageName="com.quicinc.cne.settings"
-            launcher:className="com.quicinc.cne.settings.CneSettings"/>
-        <favorite
-            launcher:packageName="com.qti.csk"
-            launcher:className="com.qti.csk.MainActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.embmstest"
-            launcher:className="com.qualcomm.embmstest.EmbmsTestAppActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.auth.fidocryptosample"
-            launcher:className="com.qualcomm.qti.auth.fidocryptosample.FidoCryptoClientActivity"/>
-        <favorite
-            launcher:packageName="org.codeaurora.bluetooth.hidtestapp"
-            launcher:className="org.codeaurora.bluetooth.hidtestapp.HidTestApp" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.improvetouch"
-            launcher:className="com.qualcomm.qti.socketservice.MainActivity" />
-        <shortcut
-            launcher:uri="#Intent;action=android.intent.action.MAIN;component=org.codeaurora.snaplauncher/org.codeaurora.snaplauncher.SwitchToLauncher3Activity;end"
-            launcher:icon="@mipmap/ic_launcher_home"
-            launcher:title="@string/switch_to_launcher3"/>
-        <favorite
-            launcher:packageName="com.qualcomm.qti.ltedirectdiscoverytest"
-            launcher:className="com.qualcomm.qti.ltedirectdiscoverytest.MainActivity"/>
-        <favorite
-            launcher:packageName="com.qualcomm.qti.uimlpatest"
-            launcher:className="com.qualcomm.qti.uimlpatest.LpaMainActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.securemsm.mdtp.MdtpDemo"
-            launcher:className="com.qualcomm.qti.securemsm.mdtp.MdtpDemo.MainUserActivity" />
-        <favorite
-            launcher:packageName="com.android.MultiplePdpTest"
-            launcher:className="com.android.MultiplePdpTest.ServiceTypeListActivity"/>
-        <favorite
-            launcher:packageName="com.android.nativeaudiolatency"
-            launcher:className="com.android.nativeaudiolatency.NativeAudioLatency" />
-        <favorite
-            launcher:packageName="com.qualcomm.pipcamera"
-            launcher:className="com.qualcomm.pipcamera.PIPCamera" />
-        <favorite
-            launcher:packageName="com.playready.junit"
-            launcher:className="com.playready.junit.PlayreadyJUnitTest" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.presenceapp"
-            launcher:className="com.qualcomm.qti.presenceapp.MainActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.app"
-            launcher:className="com.qualcomm.qti.app.MainActivity"/>
-        <favorite
-            launcher:packageName="com.qualcomm.qti.qlogcat"
-            launcher:className="com.qualcomm.qti.qlogcat.QLogcatActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.sensors.qsensortest"
-            launcher:className="com.qualcomm.qti.sensors.ui.qsensortest.TabControl" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.logkit"
-            launcher:className="com.qualcomm.qti.logkit.cActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.qct.dlt"
-            launcher:className="com.qualcomm.qct.dlt.MainActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.location.qvtester"
-            launcher:className="com.qualcomm.location.qvtester.InputCriteria"/>
-        <favorite
-            launcher:packageName="com.qualcomm.secureindicator"
-            launcher:className="com.qualcomm.secureindicator.MainActivity" />
-        <favorite
-            launcher:packageName="com.qti.csm"
-            launcher:className="com.qti.csm.EnterSet" />
-        <favorite
-            launcher:packageName="com.qualcomm.settings"
-            launcher:className="com.qualcomm.settings.SetScreenTimeout" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.soundtrigger"
-            launcher:className="com.qualcomm.qti.soundtrigger.ux.DetectionActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.qti.biometrics.voiceprint.voiceprintdemo"
-            launcher:className="com.qualcomm.qti.biometrics.voiceprint.voiceprintdemo.ui.MainActivity" />
-        <favorite
-            launcher:packageName="com.qualcomm.wfd.client"
-            launcher:className="com.qualcomm.wfd.client.WFDClientActivity"/>
-        <favorite
-            launcher:packageName="com.widevine.demo"
-            launcher:className="com.widevine.demo.WidevineSamplePlayer" />
-        <favorite
-            launcher:packageName="com.quicinc.wipoweragent"
-            launcher:className="com.quicinc.wipoweragent.WipowerAgentActivity" />
-    </folder>
-
-    <folder
-        launcher:screen="0"
-        launcher:x="3"
-        launcher:y="2"
-        launcher:title="@string/google_folder_name">
-        <favorite
-            launcher:packageName="com.google.android.GoogleCamera"
-            launcher:className="com.android.camera.CameraLauncher" />
-        <favorite
-            launcher:packageName="com.android.chrome"
-            launcher:className="com.google.android.apps.chrome.Main" />
-        <favorite
-            launcher:packageName="com.google.android.exoplayer.demo"
-            launcher:className="com.google.android.exoplayer.demo.SampleChooserActivity" />
-        <favorite
-            launcher:packageName="com.google.android.googlequicksearchbox"
-            launcher:className="com.google.android.googlequicksearchbox.SearchActivity" />
-        <favorite
-            launcher:packageName="com.google.android.apps.photos"
-            launcher:className="com.google.android.apps.photos.home.HomeActivity" />
-
-        <favorite
-            launcher:packageName="com.google.android.googlequicksearchbox"
-            launcher:className="com.google.android.googlequicksearchbox.VoiceSearchActivity" />
-    </folder>
 
     <resolve
         launcher:screen="0"
@@ -243,6 +105,13 @@
     </resolve>
 
     <!-- Workspace screen 2 -->
+    <shortcut
+        launcher:uri="#Intent;action=android.intent.action.MAIN;component=org.codeaurora.snaplauncher/org.codeaurora.snaplauncher.SwitchToLauncher3Activity;end"
+        launcher:icon="@mipmap/ic_launcher3"
+        launcher:title="@string/switch_to_launcher3"
+        launcher:screen="1"
+        launcher:x="0"
+        launcher:y="0"/>
     <favorite
         launcher:packageName="com.android.calendar"
         launcher:className="com.android.calendar.AllInOneActivity"
