@@ -664,7 +664,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
     }
 
     private void computePreviewDrawingParams(Drawable d) {
-        computePreviewDrawingParams(d.getIntrinsicWidth(), getMeasuredWidth());
+        computePreviewDrawingParams(d.getIntrinsicWidth(), getRight() - getLeft());
     }
 
     class PreviewItemDrawingParams {
