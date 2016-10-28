@@ -296,6 +296,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                     0, LayoutParams.FILL_PARENT, 1.0f));
         }
 
+        newFolder.mFolderName.setTextVisibility(false);
         addView(newFolder, cellX);
         newFolder.setOnLongClickListener(mLongClickListener);
         return newFolder;
@@ -314,6 +315,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                     0, LayoutParams.FILL_PARENT, 1.0f));
         }
 
+        folderView.mFolderName.setTextVisibility(false);
         addView(folderView, info.cellX);
         return  folderView;
     }
@@ -445,7 +447,11 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             dragInfo.cellX = cellX;
         }
 
-        setSeat(dragInfo, true);
+        mDragView = setSeat(dragInfo, true);
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE
+                && mDragView instanceof BubbleTextView) {
+            mLauncher.updateBatchArrangeApps(mDragView);
+        }
 
         if (batchArrange){
             final int basic = dragInfo.cellX;
@@ -478,7 +484,9 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                         }
                     }
                 }
-                setSeat(info, true);
+                View cell = setSeat(info, true);
+                mLauncher.updateBatchArrangeApps(cell);
+                d.snapDragViews.get(i).setCoorView(cell);
             }
         }
         mLauncher.clearBatchArrangeApps();

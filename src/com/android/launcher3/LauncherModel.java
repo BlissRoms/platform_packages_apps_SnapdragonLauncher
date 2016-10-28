@@ -1650,19 +1650,80 @@ public class LauncherModel extends BroadcastReceiver
             // Cross reference all the applications in our apps list with items in the workspace
             ArrayList<ItemInfo> tmpInfos;
             ArrayList<ItemInfo> added = new ArrayList<ItemInfo>();
+            ArrayList<ItemInfo> qualcommApps = new ArrayList<ItemInfo>();
+            ArrayList<ItemInfo> googleApps = new ArrayList<ItemInfo>();
             synchronized (sBgLock) {
                 for (AppInfo app : mBgAllAppsList.data) {
                     tmpInfos = getItemInfoForComponentName(app.componentName, app.user);
                     if (tmpInfos.isEmpty()) {
-                        // We are missing an application icon, so add this to the workspace
-                        added.add(app);
-                        // This is a rare event, so lets log it
-                        Log.e(TAG, "Missing Application on load: " + app);
+                        String packageName =  app.getIntent().getComponent() != null ?
+                                app.getIntent().getComponent().getPackageName() : "";
+                        //filter the flat launcher shortcut
+                        if (packageName.equals("org.codeaurora.snaplauncher")
+                                || packageName.equals("")){
+                            continue;
+                        }else if (packageName.contains("com.qualcomm")
+                                ||packageName.contains("com.qti")
+                                ||packageName.contains("com.quicinc")
+                                ||packageName.contains("org.codeaurora")){
+                            qualcommApps.add(app);
+                        }else if (packageName.contains("com.google")){
+                            googleApps.add(app);
+                        }else {
+                            // We are missing an application icon, so add this to the workspace
+                            added.add(app);
+                            // This is a rare event, so lets log it
+                            Log.e(TAG, "Missing Application on load: " + app);
+                        }
                     }
                 }
             }
+
+            if (!qualcommApps.isEmpty()){
+                addAndBindAddedFolderItems(qualcommApps, context.getResources()
+                        .getString(R.string.qualcomm_apps_folder_name));
+            }
+
+            if (!googleApps.isEmpty()){
+                addAndBindAddedFolderItems(googleApps,context.getResources()
+                        .getString(R.string.google_folder_name));
+            }
+
             if (!added.isEmpty()) {
                 addAndBindAddedWorkspaceItems(context, added);
+            }
+        }
+
+        private void addAndBindAddedFolderItems(final ArrayList<? extends ItemInfo> apps,
+                    String title){
+            final Map<FolderInfo, List<ShortcutInfo>> map = new HashMap<>();
+            synchronized(sBgLock) {
+
+                for (FolderInfo info:sBgFolders){
+                    List<ShortcutInfo> list = new ArrayList<>();
+                    for (ItemInfo item : apps) {
+                        if (info.title.equals(title)){
+                            list.add(((AppInfo) item).makeShortcut());
+                        }
+                    }
+                    if (list.size() > 0){
+                        map.put(info, list);
+                    }
+                }
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Iterator iterator = map.entrySet().iterator();
+                        while (iterator.hasNext()) {
+                            Map.Entry entry = (Map.Entry) iterator.next();
+                            FolderInfo key = (FolderInfo) entry.getKey();
+                            List<ShortcutInfo> val = (List<ShortcutInfo>)entry.getValue();
+                            for (ShortcutInfo info: val){
+                                key.add(info);
+                            }
+                        }
+                    }
+                });
             }
         }
 
