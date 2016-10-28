@@ -572,7 +572,7 @@ public class LauncherModel extends BroadcastReceiver
 
         int screenCount = workspaceScreens.size();
         // First check the preferred screen.
-        int preferredScreenIndex = workspaceScreens.isEmpty() ? 0 : 1;
+        int preferredScreenIndex = workspaceScreens.isEmpty() ? 0 : 2;
         if (preferredScreenIndex < screenCount) {
             screenId = workspaceScreens.get(preferredScreenIndex);
             found = findNextAvailableIconSpaceInScreen(
@@ -581,7 +581,7 @@ public class LauncherModel extends BroadcastReceiver
 
         if (!found) {
             // Search on any of the screens starting from the first screen.
-            for (int screen = 1; screen < screenCount; screen++) {
+            for (int screen = 2; screen < screenCount; screen++) {
                 screenId = workspaceScreens.get(screen);
                 if (findNextAvailableIconSpaceInScreen(
                         screenItems.get(screenId), cordinates, spanX, spanY)) {
@@ -1650,6 +1650,7 @@ public class LauncherModel extends BroadcastReceiver
             // Cross reference all the applications in our apps list with items in the workspace
             ArrayList<ItemInfo> tmpInfos;
             ArrayList<ItemInfo> added = new ArrayList<ItemInfo>();
+            ArrayList<ItemInfo> googleApps = new ArrayList<ItemInfo>();
             synchronized (sBgLock) {
                 for (AppInfo app : mBgAllAppsList.data) {
                     tmpInfos = getItemInfoForComponentName(app.componentName, app.user);
@@ -1660,6 +1661,8 @@ public class LauncherModel extends BroadcastReceiver
                         if (packageName.equals("org.codeaurora.snaplauncher")
                                 || packageName.equals("")){
                             continue;
+                        }else if (packageName.contains("com.google")){
+                            googleApps.add(app);
                         }else {
                             // We are missing an application icon, so add this to the workspace
                             added.add(app);
@@ -1670,8 +1673,46 @@ public class LauncherModel extends BroadcastReceiver
                 }
             }
 
+            if (!googleApps.isEmpty()){
+                addAndBindAddedFolderItems(googleApps,context.getResources()
+                        .getString(R.string.google_folder_name));
+            }
+
             if (!added.isEmpty()) {
                 addAndBindAddedWorkspaceItems(context, added);
+            }
+        }
+
+        private void addAndBindAddedFolderItems(final ArrayList<? extends ItemInfo> apps,
+                    String title){
+            final Map<FolderInfo, List<ShortcutInfo>> map = new HashMap<>();
+            synchronized(sBgLock) {
+
+                for (FolderInfo info:sBgFolders){
+                    List<ShortcutInfo> list = new ArrayList<>();
+                    for (ItemInfo item : apps) {
+                        if (info.title.equals(title)){
+                            list.add(((AppInfo) item).makeShortcut());
+                        }
+                    }
+                    if (list.size() > 0){
+                        map.put(info, list);
+                    }
+                }
+                runOnMainThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Iterator iterator = map.entrySet().iterator();
+                        while (iterator.hasNext()) {
+                            Map.Entry entry = (Map.Entry) iterator.next();
+                            FolderInfo key = (FolderInfo) entry.getKey();
+                            List<ShortcutInfo> val = (List<ShortcutInfo>)entry.getValue();
+                            for (ShortcutInfo info: val){
+                                key.add(info);
+                            }
+                        }
+                    }
+                });
             }
         }
 
