@@ -808,12 +808,10 @@ public final class Utilities {
         ArrayList<ComponentName> cnList = new ArrayList<ComponentName>();
         context.getPackageManager().getPreferredActivities(intentList, cnList, null);
         IntentFilter dhIF;
-        for(int i = 0; i < cnList.size(); i++)
-        {
+        for (int i = 0; i < cnList.size(); i++) {
             dhIF = intentList.get(i);
-            if(dhIF.hasAction(Intent.ACTION_MAIN) &&
-                    dhIF.hasCategory(Intent.CATEGORY_HOME))
-            {
+            if (dhIF.hasAction(Intent.ACTION_MAIN) &&
+                    dhIF.hasCategory(Intent.CATEGORY_HOME)) {
                 context.getPackageManager().clearPackagePreferredActivities(cnList.get(i)
                         .getPackageName());
             }
@@ -830,12 +828,12 @@ public final class Utilities {
         int activityNum = homeActivities.size();
         ComponentName[] set = new ComponentName[activityNum];
         int defaultMatch = -1;
-        for(int i = 0; i < activityNum; i++){
+        for (int i = 0; i < activityNum; i++) {
 
             ResolveInfo info = homeActivities.get(i);
             set[i] = new ComponentName(info.activityInfo.packageName, info.activityInfo.name);
-            if(defaultLauncher.getClassName().equals(info.activityInfo.name)
-                    && defaultLauncher.getPackageName().equals(info.activityInfo.packageName)){
+            if (defaultLauncher.getClassName().equals(info.activityInfo.name)
+                    && defaultLauncher.getPackageName().equals(info.activityInfo.packageName)) {
                 defaultMatch = info.match;
             }
         }
