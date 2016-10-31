@@ -761,6 +761,10 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         super.dispatchDraw(canvas);
 
         if (mFolder == null) return;
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE
+                && mFolder.getItemCount() == 0){
+            setVisibility(GONE);
+        }
         if (mFolder.getItemCount() == 0 && !mAnimating) return;
 
         ArrayList<View> items = mFolder.getItemsInReadingOrder();
