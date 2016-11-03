@@ -3455,10 +3455,12 @@ public class Launcher extends Activity
     public void clearBatchArrangeApps(){
         for (View view: mArrangeShortcuts.values()){
             ((BubbleTextView)view).startSelectOrCancelAnimation(false);
-            ViewParent parent = view.getParent().getParent().getParent();
-            if (parent instanceof FolderPagedView){
-                FolderPagedView pagedView = (FolderPagedView) parent;
-                pagedView.getFolder().mFolderIcon.clearLeftCornerNum();
+            if (view.getParent() != null) {
+                ViewParent parent = view.getParent().getParent().getParent();
+                if (parent instanceof FolderPagedView) {
+                    FolderPagedView pagedView = (FolderPagedView) parent;
+                    pagedView.getFolder().mFolderIcon.clearLeftCornerNum();
+                }
             }
         }
         mArrangeShortcuts.clear();
