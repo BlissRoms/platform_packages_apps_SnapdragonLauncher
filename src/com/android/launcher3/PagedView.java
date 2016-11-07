@@ -1242,11 +1242,11 @@ public abstract class PagedView extends ViewGroup implements ViewGroup.OnHierarc
             getPageAt(mCurrentPage).addFocusables(views, direction, focusableMode);
         }
         if (direction == View.FOCUS_LEFT) {
-            if (mCurrentPage > 0) {
+            if (mCurrentPage > 0 && mCurrentPage <= getPageCount()) {
                 getPageAt(mCurrentPage - 1).addFocusables(views, direction, focusableMode);
             }
         } else if (direction == View.FOCUS_RIGHT){
-            if (mCurrentPage < getPageCount() - 1) {
+            if (mCurrentPage >= -1 && mCurrentPage < getPageCount() - 1) {
                 getPageAt(mCurrentPage + 1).addFocusables(views, direction, focusableMode);
             }
         }

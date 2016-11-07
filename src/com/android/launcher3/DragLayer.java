@@ -599,24 +599,29 @@ public class DragLayer extends InsettableFrameLayout {
 
     public void animateViewIntoPosition(DragView dragView, final View child, int duration,
             final Runnable onFinishAnimationRunnable, View anchorView) {
-        ShortcutAndWidgetContainer parentChildren = (ShortcutAndWidgetContainer) child.getParent();
-        CellLayout.LayoutParams lp =  (CellLayout.LayoutParams) child.getLayoutParams();
-        parentChildren.measureChild(child);
-
         Rect r = new Rect();
         getViewRectRelativeToSelf(dragView, r);
 
         int coord[] = new int[2];
-        float childScale = child.getScaleX();
-        coord[0] = lp.x + (int) (child.getMeasuredWidth() * (1 - childScale) / 2);
-        coord[1] = lp.y + (int) (child.getMeasuredHeight() * (1 - childScale) / 2);
+        if (child.getParent().getParent() instanceof CellLayout){
+            ShortcutAndWidgetContainer parentChildren = (ShortcutAndWidgetContainer) child
+                    .getParent();
+            CellLayout.LayoutParams lp =  (CellLayout.LayoutParams) child.getLayoutParams();
+            parentChildren.measureChild(child);
+            float childScale = child.getScaleX();
+            coord[0] = lp.x + (int) (child.getMeasuredWidth() * (1 - childScale) / 2);
+            coord[1] = lp.y + (int) (child.getMeasuredHeight() * (1 - childScale) / 2);
+        }
 
         // Since the child hasn't necessarily been laid out, we force the lp to be updated with
         // the correct coordinates (above) and use these to determine the final location
         float scale = getDescendantCoordRelativeToSelf((View) child.getParent(), coord);
+        if (child.getParent() instanceof  Hotseat){
+            scale = getLocationInDragLayer(child, coord);
+        }
         // We need to account for the scale of the child itself, as the above only accounts for
         // for the scale in parents.
-        scale *= childScale;
+        scale *= child.getScaleX();
         int toX = coord[0];
         int toY = coord[1];
         float toScale = scale;
@@ -834,13 +839,14 @@ public class DragLayer extends InsettableFrameLayout {
     }
 
     public void clearBatchAppsAnimatedView(){
-        mAnimatorSet.cancel();
         mAnimators.clear();
+        mAnimatorSet.cancel();
+        mAnimatorSet = LauncherAnimUtils.createAnimatorSet();
     }
 
     public void clearAnimatedView(){
-        mAnimatorSet.cancel();
         mAnimators.clear();
+        mAnimatorSet.cancel();
         clearAnimatedView(mDropView, mDropAnim);
     }
 

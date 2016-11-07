@@ -34,6 +34,7 @@ import com.android.launcher3.UninstallDropTarget.UninstallSource;
 import com.android.launcher3.util.Thunk;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.codeaurora.snaplauncher.BatchArrangeDragView;
 import org.codeaurora.snaplauncher.R;
@@ -296,6 +297,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                     0, LayoutParams.FILL_PARENT, 1.0f));
         }
 
+        newFolder.mFolderName.setTextVisibility(false);
         addView(newFolder, cellX);
         newFolder.setOnLongClickListener(mLongClickListener);
         return newFolder;
@@ -314,6 +316,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                     0, LayoutParams.FILL_PARENT, 1.0f));
         }
 
+        folderView.mFolderName.setTextVisibility(false);
         addView(folderView, info.cellX);
         return  folderView;
     }
@@ -407,7 +410,10 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             mReorderAlarm.cancelAlarm();
             listener.onAlarm(mReorderAlarm);
         }
-        final boolean batchArrange = d.snapDragViews != null && d.snapDragViews.size() > 0;
+        final List<ItemInfo> batchInfos = new ArrayList<>();
+        for (BatchArrangeDragView dragView:d.snapDragViews){
+            batchInfos.add((ItemInfo)dragView.getView().getTag());
+        }
         int pos = isLand() ? d.y / mItemHeight : d.x / mItemWidth;
         if (pos <= 0) {
             pos = 0;
@@ -445,41 +451,37 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             dragInfo.cellX = cellX;
         }
 
-        setSeat(dragInfo, true);
+        mDragView = setSeat(dragInfo, true);
+        if (mLauncher.mWorkspace.getState() == Workspace.State.ARRANGE
+                && mDragView instanceof BubbleTextView) {
+            mLauncher.updateBatchArrangeApps(mDragView);
+        }
+        final int basic = dragInfo.cellX;
 
-        if (batchArrange){
-            final int basic = dragInfo.cellX;
-
-            for (int i=0; i< d.snapDragViews.size(); i++){
-                View dragView = d.snapDragViews.get(i).getView();
-                ItemInfo info = (ItemInfo) dragView.getTag();
-                if ((basic +i+1) >= getChildCount()){
-                    info.cellX = (basic + i +1) % 5;
-                }else {
-                    info.cellX = (basic +i+1);
-                }
-
-                if (d.snapDragViews.get(i).getType()
-                        == BatchArrangeDragView.BubbleTextViewType.HOTSEAT){
-                    dragView.setVisibility(INVISIBLE);
-                    removeView(dragView);
-                    addView(dragView, info.cellX);
-                }else {
-                    final int emptyPos = getEmptySeatPosition();
-                    if (emptyPos != -1){
-                        View emptyView = getChildAt(emptyPos);
-                        emptyView.setVisibility(View.INVISIBLE);
-                        removeView(emptyView);
-                        addView(emptyView, info.cellX);
-                        if (d.snapDragViews.get(i).getType()
-                                == BatchArrangeDragView.BubbleTextViewType.WORKSPACE){
-                            mLauncher.mWorkspace.getParentCellLayoutForView(dragView)
-                                    .removeView(dragView);
-                        }
-                    }
-                }
-                setSeat(info, true);
+        for (int i=0; i< batchInfos.size(); i++){
+            View dragView = d.snapDragViews.get(i).getView();
+            ItemInfo info = batchInfos.get(i);
+            if ((basic +i+1) >= getChildCount()){
+                info.cellX = (basic + i +1) % 5;
+            }else {
+                info.cellX = (basic +i+1);
             }
+
+            final int emptyPos = getEmptySeatPosition();
+            if (emptyPos != -1){
+                View emptyView = getChildAt(emptyPos);
+                emptyView.setVisibility(View.INVISIBLE);
+                removeView(emptyView);
+                addView(emptyView, info.cellX);
+                if (d.snapDragViews.get(i).getType()
+                        == BatchArrangeDragView.BubbleTextViewType.WORKSPACE){
+                    mLauncher.mWorkspace.getParentCellLayoutForView(dragView)
+                            .removeView(dragView);
+                }
+            }
+            View cell = setSeat(info, true);
+            mLauncher.updateBatchArrangeApps(cell);
+            d.snapDragViews.get(i).setCoorView(cell);
         }
         mLauncher.clearBatchArrangeApps();
     }
