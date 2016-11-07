@@ -42,8 +42,6 @@ import com.android.launcher3.Utilities;
 
 public class SwitchToFlatLauncherActivity extends Activity{
 
-    private String mWillingKilledPackage = Utilities.FLAT_LAUNCHER_PACKAGENAME;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,12 +51,6 @@ public class SwitchToFlatLauncherActivity extends Activity{
     protected void onResume(){
         super.onResume();
         showSetFlatLauncherAsHomeMsg();
-    }
-
-    @Override
-    public void onDestroy(){
-        super.onDestroy();
-        Utilities.killLauncher(getApplicationContext(), mWillingKilledPackage);
     }
 
     private void showSetFlatLauncherAsHomeMsg() {
@@ -85,7 +77,6 @@ public class SwitchToFlatLauncherActivity extends Activity{
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 startFlatLauncherAndSetDefault();
-                                mWillingKilledPackage =  Utilities.LAUNCHER_PACKAGENAME;
                                 finish();
                             }
                         })
@@ -94,12 +85,15 @@ public class SwitchToFlatLauncherActivity extends Activity{
     }
 
     private void startFlatLauncherAndSetDefault(){
-        Intent intent = new Intent();
         ComponentName component=new ComponentName(Utilities.FLAT_LAUNCHER_PACKAGENAME,
                 Utilities.LAUNCHER_CLASSNAME);
-        intent.setComponent(component);
-        startActivity(intent);
         //set Launcher3 as the preferred home activity
         Utilities.setupDefaultLauncher(getPackageManager(), getApplicationContext(), component);
+
+        Intent startMain = new Intent(Intent.ACTION_MAIN);
+        startMain.addCategory(Intent.CATEGORY_HOME);
+        startMain.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+        startActivity(startMain);
     }
 }
