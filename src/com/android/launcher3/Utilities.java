@@ -876,4 +876,24 @@ public final class Utilities {
             return res.activityInfo.packageName;
         }
     }
+
+    public static CharSequence getShortcutTitle(PackageManager manager, Intent intent) {
+        ComponentName componentName = intent.getComponent();
+        if (componentName == null) {
+            return null;
+        }
+        try {
+            PackageInfo pi = manager.getPackageInfo( componentName.getPackageName(), 0);
+            if (!pi.applicationInfo.enabled) {
+                return null;
+            }
+        } catch (NameNotFoundException e) {
+            Log.d(TAG, "getPackInfo failed for package " + componentName.getPackageName());
+        }
+        ResolveInfo resolveInfo = manager.resolveActivity(intent, 0);
+        if (resolveInfo != null) {
+            return resolveInfo.activityInfo.loadLabel(manager);
+        }
+        return null;
+    }
 }
