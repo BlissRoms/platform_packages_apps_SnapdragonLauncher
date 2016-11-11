@@ -120,6 +120,8 @@
             android:label="@string/switch_to_launcher3"
             android:enabled="false"
             android:exported="false"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
             android:theme="@style/Theme.UserDialog">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -131,6 +133,8 @@
             android:name="org.codeaurora.snaplauncher.SwitchToFlatLauncherActivity"
             android:label="@string/snaplauncher_app_name"
             android:enabled="true"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
             android:theme="@style/Theme.UserDialog">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

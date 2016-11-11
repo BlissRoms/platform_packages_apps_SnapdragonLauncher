@@ -183,7 +183,8 @@ public class FolderIcon extends FrameLayout implements FolderListener {
         mNumberPaint.setAntiAlias(true);
         mNumberPaint.setColor(getResources().
                 getColor(R.color.default_arrange_select_number_color));
-        mNumberPaint.setTypeface(Typeface.SANS_SERIF);
+        Typeface typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+        mNumberPaint.setTypeface(typeface);
         int numberTextSize = getResources().
                 getDimensionPixelSize(R.dimen.default_arrange_select_number_textsize);
         mNumberPaint.setTextSize(numberTextSize);
@@ -664,7 +665,7 @@ public class FolderIcon extends FrameLayout implements FolderListener {
     }
 
     private void computePreviewDrawingParams(Drawable d) {
-        computePreviewDrawingParams(d.getIntrinsicWidth(), getMeasuredWidth());
+        computePreviewDrawingParams(d.getIntrinsicWidth(), getRight() - getLeft());
     }
 
     class PreviewItemDrawingParams {

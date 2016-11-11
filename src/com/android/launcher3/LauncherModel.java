@@ -2157,7 +2157,10 @@ public class LauncherModel extends BroadcastReceiver
                                             allowMissingTarget, useLowResIcon);
                                 } else {
                                     info = getShortcutInfo(c, context, titleIndex, cursorIconInfo);
-
+                                    CharSequence title = Utilities.getShortcutTitle(manager, intent);
+                                    if(title != null ){
+                                        info.title = title;
+                                    }
                                     // App shortcuts that used to be automatically added to Launcher
                                     // didn't always have the correct intent flags set, so do that
                                     // here
