@@ -65,7 +65,8 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     private boolean mWillSetDragViewVisible = false;
 
     private static final int FOLDER_CREATION_TIMEOUT = 0;
-    private static final int FOLDER_CREATE_ANIMATION = 1;
+    private static final int FOLDER_CREATE_ANIMATION_INNER = 1;
+    private static final int FOLDER_CREATE_ANIMATION_OUTER = 2;
     private final Alarm mFolderCreationAlarm = new Alarm();
     @Thunk FolderIcon.FolderRingAnimator mDragFolderRingAnimator = null;
 
@@ -438,10 +439,19 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                 mContentHotSeat, mTargetCell, targetCellDistance,
                 d.dragSource instanceof  Workspace, d, null)) {
             mNewFolderCreated = true;
+            if(!(d.dragSource instanceof Hotseat) && mDragView != null
+                    && mDragView.getVisibility() == INVISIBLE){
+                Message msg = myHandler.obtainMessage(FOLDER_CREATE_ANIMATION_OUTER, null);
+                myHandler.sendMessageDelayed(msg, 100);
+            }
             return ;
         }
         if(addToExistingFolderIfNecessary(mContentHotSeat,cellX,targetCellDistance,
                 d.dragSource instanceof  Workspace, d)){
+            if(!(d.dragSource instanceof Hotseat) && mDragView != null
+                    && mDragView.getVisibility() == INVISIBLE){
+                animateSetViewVisibility(mDragView, GONE);
+            }
             return ;
         }
 
@@ -584,7 +594,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         for (int i = 0; i < count; i++) {
             View v = getChildAt(i);
 
-            if (v instanceof BubbleTextView && v.getVisibility() != GONE) {
+            if (v.getVisibility() != GONE) {
                 getLayoutTransition().addChild(this, v);
             }
             if (v instanceof FolderIcon) {
@@ -594,19 +604,11 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                             ((FolderIcon) v).getChildAt(j));
             }
         }
+        invalidate();
     }
 
     public void setDragViewVisibility(boolean visible) {
-        LayoutTransition oriLayoutTransition = getLayoutTransition();
-        setLayoutTransition(null);
-        if (mDragView != null) {
-            if (visible) {
-                mDragView.setVisibility(View.VISIBLE);
-            } else {
-                mDragView.setVisibility(View.GONE);
-            }
-        }
-        startHotseatLayoutTransition(oriLayoutTransition);
+        animateSetViewVisibility(mDragView, visible ? VISIBLE : GONE);
     }
 
     boolean willCreateUserFolder(ItemInfo info, Hotseat target, int targetCell, float
@@ -855,11 +857,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         mLauncher.getDragLayer().getLocationInDragLayer(this, loc);
     }
 
-    private void handleFolderAnimation(Object obj) {
-        handleDropCompleted((DropParams) obj);
-        mNewFolderCreated = false;
-    }
-
     private void handleDropCompleted(DropParams param) {
         if (mWillSetDragViewVisible || !param.success || param.target instanceof InfoDropTarget) {
             if (mDragView != null) {
@@ -867,10 +864,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             }
         } else {
             if (mDragView != null && mDragView.getVisibility() != GONE) {
-                LayoutTransition oriLayoutTransition = getLayoutTransition();
-                setLayoutTransition(null);
-                mDragView.setVisibility(View.GONE);
-                startHotseatLayoutTransition(oriLayoutTransition);
+                animateSetViewVisibility(mDragView, GONE);
             }
         }
 
@@ -898,8 +892,13 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     private Handler myHandler = new Handler() {
         public void handleMessage(Message msg) {
             switch (msg.what) {
-                case FOLDER_CREATE_ANIMATION:
-                    handleFolderAnimation(msg.obj);
+                case FOLDER_CREATE_ANIMATION_INNER:
+                    handleDropCompleted((DropParams) msg.obj);
+                    mNewFolderCreated = false;
+                    break;
+                case FOLDER_CREATE_ANIMATION_OUTER:
+                    animateSetViewVisibility(mDragView, GONE);
+                    mNewFolderCreated = false;
                     break;
             }
             super.handleMessage(msg);
@@ -927,7 +926,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         param.isFlingToDelete = isFlingToDelete;
         param.success = success;
         if (mNewFolderCreated) {
-            Message msg = myHandler.obtainMessage(FOLDER_CREATE_ANIMATION, param);
+            Message msg = myHandler.obtainMessage(FOLDER_CREATE_ANIMATION_INNER, param);
             myHandler.sendMessageDelayed(msg, 100);
         } else {
             handleDropCompleted(param);
@@ -1145,7 +1144,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         public void onAlarm(Alarm alarm) {
             final int emptyPos = getEmptySeatPosition();
             if (emptyPos != -1 && mDragFromExternal && !haveInVisibleViews()) {
-                View emptyView = getChildAt(emptyPos);
+                final View emptyView = getChildAt(emptyPos);
                 emptyView.setVisibility(View.INVISIBLE);
                 if (isLand()) {
                     updateItemValidHeight();
@@ -1154,33 +1153,57 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                     updateItemValidWidth();
                     mDragPos = d.x / mItemWidth;
                 }
-                int vericellx = getCellXByPos(mDragPos);
+                final int vericellx = getCellXByPos(mDragPos);
                 if (vericellx < getChildCount()) {
-                    LayoutTransition oriLayoutTransition = getLayoutTransition();
-                    setLayoutTransition(null);
-                    removeView(emptyView);
-                    addView(emptyView, vericellx);
-                    startHotseatLayoutTransition(oriLayoutTransition);
+                    animateView(new Runnable() {
+                        @Override
+                        public void run() {
+                            removeView(emptyView);
+                            addView(emptyView, vericellx);
+                        }
+                    });
                 }
                 mDragView = emptyView;
                 updateDragFromExternal(false);
             }else {
-                int pos = isLand() ? d.y / mItemHeight : d.x / mItemWidth;
-                int cellX = getCellXByPos(pos);
+                final int pos = isLand() ? d.y / mItemHeight : d.x / mItemWidth;
+                final int cellX = getCellXByPos(pos);
                 if (mDragPos != pos && cellX < getChildCount()) {
-                    int idx = getCellXByPos(mDragPos);
+                    final int idx = getCellXByPos(mDragPos);
                     if (idx > getChildCount() - 1) {
                         return;
                     }
-                    View dragView = mDragView;
-                    LayoutTransition oriLayoutTransition = getLayoutTransition();
-                    setLayoutTransition(null);
-                    removeViewAt(idx);
-                    addView(dragView, cellX);
-                    startHotseatLayoutTransition(oriLayoutTransition);
-                    mDragPos = pos;
+                    final View dragView = mDragView;
+                    animateView(new Runnable() {
+                        @Override
+                        public void run() {
+                            removeViewAt(idx);
+                            if (dragView.getParent() != null) {
+                                removeView(dragView);
+                            }
+                            addView(dragView, cellX);
+                            mDragPos = pos;
+                        }
+                    });
                 }
             }
         }
+    }
+
+    private void animateSetViewVisibility(final View view, final int visibility){
+        animateView(new Runnable() {
+            @Override
+            public void run() {
+                if (view != null)
+                    view.setVisibility(visibility);
+            }
+        });
+    }
+
+    private void animateView(Runnable r){
+        LayoutTransition oriLayoutTransition = getLayoutTransition();
+        setLayoutTransition(null);
+        r.run();
+        startHotseatLayoutTransition(oriLayoutTransition);
     }
 }
