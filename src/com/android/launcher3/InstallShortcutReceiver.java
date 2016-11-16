@@ -33,6 +33,7 @@ import com.android.launcher3.compat.LauncherActivityInfoCompat;
 import com.android.launcher3.compat.LauncherAppsCompat;
 import com.android.launcher3.compat.UserHandleCompat;
 import com.android.launcher3.compat.UserManagerCompat;
+import com.android.launcher3.util.PackageManagerHelper;
 import com.android.launcher3.util.Thunk;
 
 import org.json.JSONException;
@@ -156,6 +157,15 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
         }
 
         info = convertToLauncherActivityIfPossible(info);
+        if (!info.isLauncherActivity()) {
+            // Since its a custom shortcut, verify that it is safe to launch.
+            if (!PackageManagerHelper.hasPermissionForActivity(
+                    context, info.launchIntent, null)) {
+                // Target cannot be launched, or requires some special permission to launch
+                Log.e(TAG, "Ignoring malicious intent " + info.launchIntent.toUri(0));
+                return;
+            }
+        }
         queuePendingShortcutInfo(info, context);
     }
 
@@ -372,7 +382,7 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
             return packageName;
         }
 
-        public boolean isLuncherActivity() {
+        public boolean isLauncherActivity() {
             return activityInfo != null;
         }
     }
@@ -436,7 +446,7 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
      */
     private static PendingInstallShortcutInfo convertToLauncherActivityIfPossible(
             PendingInstallShortcutInfo original) {
-        if (original.isLuncherActivity()) {
+        if (original.isLauncherActivity()) {
             // Already an activity target
             return original;
         }
