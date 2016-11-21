@@ -849,19 +849,6 @@ public final class Utilities {
         pm.addPreferredActivity(filter, defaultMatch, set, defaultLauncher);
     }
 
-    public static void killLauncher(Context context, String packageName) {
-        try {
-            ActivityManager am = (ActivityManager)context
-                    .getSystemService(Context.ACTIVITY_SERVICE);
-            Method forceStopPackage = am.getClass()
-                    .getDeclaredMethod("forceStopPackage", String.class);
-            forceStopPackage.setAccessible(true);
-            forceStopPackage.invoke(am, packageName);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
-
     private static String getLauncherPackageName(Context context) {
         final Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_HOME);
@@ -875,5 +862,25 @@ public final class Utilities {
         } else {
             return res.activityInfo.packageName;
         }
+    }
+
+    public static CharSequence getShortcutTitle(PackageManager manager, Intent intent) {
+        ComponentName componentName = intent.getComponent();
+        if (componentName == null) {
+            return null;
+        }
+        try {
+            PackageInfo pi = manager.getPackageInfo( componentName.getPackageName(), 0);
+            if (!pi.applicationInfo.enabled) {
+                return null;
+            }
+        } catch (NameNotFoundException e) {
+            Log.d(TAG, "getPackInfo failed for package " + componentName.getPackageName());
+        }
+        ResolveInfo resolveInfo = manager.resolveActivity(intent, 0);
+        if (resolveInfo != null) {
+            return resolveInfo.activityInfo.loadLabel(manager);
+        }
+        return null;
     }
 }

@@ -167,7 +167,8 @@ public class DragView extends View {
         mNumberPaint = new Paint();
         mNumberPaint.setAntiAlias(true);
         mNumberPaint.setColor(res.getColor(R.color.default_arrange_select_number_color));
-        mNumberPaint.setTypeface(Typeface.SANS_SERIF);
+        Typeface typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
+        mNumberPaint.setTypeface(typeface);
         mNumberTextSize = res.getDimensionPixelSize(R.dimen.default_arrange_select_number_textsize);
         mNumberPaint.setTextSize(mNumberTextSize);
 
