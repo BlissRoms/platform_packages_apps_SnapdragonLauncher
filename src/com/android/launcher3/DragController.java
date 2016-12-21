@@ -573,7 +573,8 @@ public class DragController {
 
     private void checkTouchMove(DropTarget dropTarget) {
         if (dropTarget != null) {
-            if(mLastDropTarget instanceof  Hotseat && dropTarget instanceof  Workspace){
+            if((mLastDropTarget instanceof  Hotseat && dropTarget instanceof  Workspace)
+                    ||(mLastDropTarget instanceof  Hotseat && dropTarget instanceof  Folder)){
                 mLauncher.mHotseat.setDragViewVisibility(false);
                 mLauncher.mHotseat.updateDragFromExternal(false);
             }else if((mLastDropTarget instanceof  Workspace && dropTarget instanceof  Hotseat)

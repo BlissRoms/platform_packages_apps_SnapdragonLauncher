@@ -106,20 +106,6 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         this(context, attrs, 0);
     }
 
-    /**
-     * Given a cell coordinate, return the point that represents the upper left corner of that cell
-     *
-     * @param cellX  X coordinate of the cell
-     * @param cellY  Y coordinate of the cell
-     * @param result Array of 2 ints to hold the x and y coordinate of the point
-     */
-    void cellToPoint(int cellX, int cellY, int[] result) {
-        int pos = getDragPosByCellX(cellX);
-        result[0] = getPaddingLeft() + pos * mItemWidth;
-        result[1] = (int) (getPaddingTop() + cellY * (getResources().
-                getDimension(R.dimen.hotseat_height)));
-    }
-
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -147,9 +133,10 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
             cellToPoint(fra.mCellX, fra.mCellY, mTempLocation);
             View child = getChildAt(fra.mCellX);
             if (child != null) {
-                int centerX = (int)mDropViewVisualCenter[0];
-                int centerY = mTempLocation[1] + previewOffset / 2 +
-                        child.getPaddingTop() + grid.folderBackgroundOffset;
+
+                int centerX = mTempLocation[0];
+                int centerY = getPaddingTop()+ mTempLocation[1] * child.getHeight() +
+                        previewOffset / 2 + child.getPaddingTop() + grid.folderBackgroundOffset;
 
                 // Draw outer ring, if it exists
                 if (FolderIcon.HAS_OUTER_RING) {
@@ -174,6 +161,19 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                 canvas.restore();
             }
         }
+    }
+
+    /**
+     * Given a cell coordinate, return the point that represents the upper left corner of that cell
+     *
+     * @param cellX X coordinate of the cell
+     * @param cellY Y coordinate of the cell
+     *
+     * @param result Array of 2 ints to hold the x and y coordinate of the point
+     */
+    void cellToPoint(int cellX, int cellY, int[] result) {
+        result[0] = (int)mDropViewVisualCenter[0];
+        result[1] = isLand() ? getDragPosByCellX(cellX): 0;
     }
 
     public float getChildrenScale() {
@@ -336,7 +336,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
         }
     }
 
-    boolean createUserFolderIfNecessary(/*View newView, */long container, Hotseat target,
+    boolean createUserFolderIfNecessary(long container, Hotseat target,
                                         int targetCell, float distance, boolean external,
                                         DragObject d, Runnable postAnimationRunnable) {
         if (distance > mMaxDistanceForFolderCreation) return false;
@@ -435,8 +435,8 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
                 mDragViewVisualCenter[0] - mDropViewVisualCenter[0],
                 mDragViewVisualCenter[1] - mDropViewVisualCenter[1]);
 
-        if (createUserFolderIfNecessary(/*d.dragView,*/ container,
-                mContentHotSeat, mTargetCell, targetCellDistance,
+        if (createUserFolderIfNecessary(container, mContentHotSeat,
+                mTargetCell, targetCellDistance,
                 d.dragSource instanceof  Workspace, d, null)) {
             mNewFolderCreated = true;
             if(!(d.dragSource instanceof Hotseat) && mDragView != null
@@ -730,7 +730,7 @@ public class Hotseat extends LinearLayout implements DragSource, DropTarget,
     }
 
 
-    public final float[] getVisualCenter(int cellX,float toViewWidth,float toViewHeight) {
+    private final float[] getVisualCenter(int cellX,float toViewWidth,float toViewHeight) {
         final float res[] = new float[2];
         WindowManager wm = (WindowManager) getContext()
                 .getSystemService(Context.WINDOW_SERVICE);
