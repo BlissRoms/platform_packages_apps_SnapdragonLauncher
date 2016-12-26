@@ -639,10 +639,6 @@ public class BubbleTextView extends TextView
         if (iconSize != -1) {
             mIcon.setBounds(0, 0, iconSize, iconSize);
         }
-        isLand = isLand();
-        if(isLand && mIsHotseat){
-            mLayoutHorizontal = true;
-        }
         if (mLayoutHorizontal) {
             if (Utilities.ATLEAST_JB_MR1) {
                 setCompoundDrawablesRelative(mIcon, null, null, null);
